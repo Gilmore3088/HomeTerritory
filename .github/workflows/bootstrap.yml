@@ -1,0 +1,43 @@
+name: Bootstrap Territory MVP
+
+on:
+  push:
+    branches:
+      - codex/territory-mvp
+    paths:
+      - .bootstrap/**
+      - .github/workflows/bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/territory-mvp
+          fetch-depth: 0
+
+      - name: Reconstruct and verify source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/chunk-* > /tmp/hometerritory.tar.gz.b64
+          base64 --decode /tmp/hometerritory.tar.gz.b64 > /tmp/hometerritory.tar.gz
+          echo "89ebe4a37ab9e5c5731ad257342959a12d07ab68b5926c15c80034dbe9c14387  /tmp/hometerritory.tar.gz" | sha256sum --check
+          tar -xzf /tmp/hometerritory.tar.gz -C .
+
+      - name: Commit developed application
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .bootstrap
+          rm -f .github/workflows/bootstrap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "feat: build connected Territory MVP"
+          git push origin HEAD:codex/territory-mvp

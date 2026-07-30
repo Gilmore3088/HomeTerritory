@@ -5,20 +5,35 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: territory-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_example
       SUPABASE_SECRET_KEY: sb_secret_example
       CRON_SECRET: example
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm test
-      - run: npm run typecheck
-      - run: npm run build
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run game-rule tests
+        run: npm test
+      - name: Run strict application typecheck
+        run: npm run typecheck
+      - name: Build production application
+        run: npm run build

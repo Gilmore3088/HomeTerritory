@@ -2,9 +2,9 @@
 
 HomeTerritory is the working MVP for **Territory**: an asynchronous, private-group sports trivia game where correct answers claim and steal U.S. states.
 
-This repository is not a static mockup. The application is designed around shared Supabase state, server-authoritative PostgreSQL functions, authenticated users, realtime map updates, and a scheduled daily scoring job.
+This repository is not a static mockup. The application uses shared Supabase state, server-authoritative PostgreSQL functions, authenticated users, realtime map updates, and scheduled scoring.
 
-## What works in this branch
+## What works
 
 - Email/password signup and sign-in through Supabase Auth
 - Create a private group and select sports and season length
@@ -31,22 +31,49 @@ This repository is not a static mockup. The application is designed around share
 
 The browser never decides whether an answer is correct, whether a state is adjacent, whether an action exists, or whether ownership changes.
 
-## Connect Supabase
+## Connected Supabase project
 
-1. Create a new Supabase project.
-2. Open the SQL editor and run `supabase/migrations/202607300001_initial_schema.sql`.
-3. In **Authentication → URL Configuration**, set the production site URL and add `http://localhost:3000` as a redirect URL while developing.
-4. Copy `.env.example` to `.env.local` and fill in:
+- Project ref: `gduvdnpxgdniogmxxlmg`
+- Project URL: `https://gduvdnpxgdniogmxxlmg.supabase.co`
+
+Never commit or paste the database password, a Supabase secret key, a legacy service-role key, or a personal access token.
+
+## Deploy the database migration securely
+
+The repository includes `.github/workflows/deploy-supabase.yml`. It applies migrations through the Supabase CLI while keeping credentials in encrypted GitHub Actions secrets.
+
+1. Create a Supabase personal access token from your Supabase account settings.
+2. In GitHub, open **HomeTerritory → Settings → Secrets and variables → Actions**.
+3. Add these repository secrets:
+
+   - `SUPABASE_ACCESS_TOKEN`: your Supabase personal access token
+   - `SUPABASE_DB_PASSWORD`: the current database password
+
+4. Open **Actions → Deploy Supabase database → Run workflow**.
+5. Confirm the workflow passes. It performs a dry run, applies pending migrations, and prints migration status.
+
+After the first deployment, future commits that change `supabase/migrations/**` automatically deploy the new migrations from `main`.
+
+## Configure application keys
+
+Supabase now recommends publishable keys for browser clients and secret keys for trusted server components.
+
+In **Supabase → Settings → API Keys**, copy:
+
+- the publishable key into `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- the secret key into `SUPABASE_SECRET_KEY`
+
+The secret key bypasses Row Level Security and must exist only in Vercel or a local `.env.local` file. It must never be exposed to client components or committed to Git.
+
+Copy `.env.example` to `.env.local` and fill in:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_URL=https://gduvdnpxgdniogmxxlmg.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_SECRET_KEY=
 CRON_SECRET=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
-
-The service-role key is only imported by the protected Vercel Cron route. It is never exposed to client components.
 
 ## Run locally
 
@@ -61,17 +88,18 @@ To test the real multiplayer flow, create three accounts using three email addre
 
 ## Deploy to Vercel
 
-1. Import this GitHub repository into Vercel.
-2. Add all variables from `.env.example` in Vercel project settings.
-3. Set `CRON_SECRET` to a long random value. Vercel automatically sends it to the cron route as a bearer token.
+1. Import `Gilmore3088/HomeTerritory` into Vercel.
+2. Add every variable from `.env.example` in Vercel project settings.
+3. Set `CRON_SECRET` to a long random value.
 4. Deploy.
-5. Update Supabase's site URL to the Vercel domain.
+5. Update `NEXT_PUBLIC_SITE_URL` to the Vercel production domain.
+6. In Supabase **Authentication → URL Configuration**, set the production site URL and add the Vercel authentication callback URLs.
 
-`vercel.json` runs the daily tick at 08:05 UTC. The MVP uses one UTC scoring tick; per-group local-midnight scoring is a post-MVP refinement.
+`vercel.json` runs the daily tick at 08:05 UTC. The MVP uses one UTC scoring tick; per-group local-midnight scoring is a later refinement.
 
 ## Starter question bank
 
-The migration creates 550 starter questions—11 per state—so claims, attacks, and defenses can be tested without runtime AI generation. They prove the game pipeline but are deliberately marked `starter_seed`, not production-validated. A production rollout should replace or augment them with the structured generation and external validation pipeline described in the PRD.
+The migration creates 550 starter questions—11 per state—so claims, attacks, and defenses can be tested without runtime AI generation. They prove the game pipeline but are marked `starter_seed`, not production-validated. A production rollout should replace or augment them with the structured generation and external validation pipeline described in the PRD.
 
 ## Security notes
 
@@ -79,7 +107,8 @@ The migration creates 550 starter questions—11 per state—so claims, attacks,
 - All gameplay writes happen through authenticated PostgreSQL RPC functions.
 - Question answers, attempts, cooldowns, and reports are not directly readable by clients.
 - Internal attack-resolution functions have public execution revoked.
-- The daily tick requires the service role and a separate cron secret.
+- The daily tick requires the server secret key and a separate cron secret.
+- `SUPABASE_SECRET_KEY` is accepted by the server. `SUPABASE_SERVICE_ROLE_KEY` remains a temporary compatibility fallback only.
 
 ## Current intentional MVP limits
 
@@ -91,10 +120,10 @@ The migration creates 550 starter questions—11 per state—so claims, attacks,
 
 ## Verification
 
-The pure game-rule tests run with Node 22 without third-party packages:
-
 ```bash
 npm test
+npm run typecheck
+npm run build
 ```
 
-The GitHub Actions workflow also runs type checking and a production Next.js build after dependencies are installed.
+The GitHub Actions CI workflow runs all three checks on pull requests.

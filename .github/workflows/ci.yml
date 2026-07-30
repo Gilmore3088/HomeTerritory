@@ -11,7 +11,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_example
-      SUPABASE_SERVICE_ROLE_KEY: example
+      SUPABASE_SECRET_KEY: sb_secret_example
       CRON_SECRET: example
     steps:
       - uses: actions/checkout@v4

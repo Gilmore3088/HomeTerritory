@@ -40,34 +40,25 @@ Deno.serve(async (request: Request) => {
     if (groupError) return respond({ error: groupError.message }, 500);
     if (!group) return respond({ error: "That code is not an active playtest invite." }, 403);
 
-    const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (listError) return respond({ error: listError.message }, 500);
-    const existing = listed.users.find((candidate) => candidate.email?.toLowerCase() === email) ?? null;
-    let user = existing;
-
-    if (user) {
-      if (user.email_confirmed_at) {
+    // Never modify an existing account here: a playtest invite code is not
+    // proof of email ownership, so recovering/confirming an existing user
+    // would let any code holder take over unconfirmed accounts.
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { display_name: displayName },
+    });
+    if (createError) {
+      if (createError.code === "email_exists" || /already.*registered|already.*exists/i.test(createError.message ?? "")) {
         return respond({ error: "An account with that email already exists. Sign in instead." }, 409);
       }
-      const { data: recovered, error: recoverError } = await admin.auth.admin.updateUserById(user.id, {
-        password,
-        email_confirm: true,
-        user_metadata: { ...user.user_metadata, display_name: displayName },
-      });
-      if (recoverError) return respond({ error: recoverError.message }, 400);
-      user = recovered.user;
-    } else {
-      const { data: created, error: createError } = await admin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { display_name: displayName },
-      });
-      if (createError) return respond({ error: createError.message }, 400);
-      user = created.user;
+      return respond({ error: createError.message }, 400);
     }
+    const user = created.user;
 
-    await admin.from("profiles").upsert({ id: user.id, display_name: displayName }, { onConflict: "id" });
+    const { error: profileError } = await admin.from("profiles").upsert({ id: user.id, display_name: displayName }, { onConflict: "id" });
+    if (profileError) return respond({ error: profileError.message }, 500);
 
     const { data: existingMembership } = await admin
       .from("group_members")
@@ -89,37 +80,52 @@ Deno.serve(async (request: Request) => {
 
     let homeState: string | null = null;
     if (group.status === "active") {
-      const { data: season } = await admin.from("seasons").select("id").eq("group_id", group.id).eq("status", "active").maybeSingle();
+      const { data: season, error: seasonError } = await admin.from("seasons").select("id").eq("group_id", group.id).eq("status", "active").maybeSingle();
+      if (seasonError) return respond({ error: seasonError.message }, 500);
       if (season) {
-        const { data: existingHome } = await admin.from("profiles").select("home_state").eq("id", user.id).maybeSingle();
-        homeState = existingHome?.home_state ?? null;
+        // home_state lives on group_members, not profiles.
+        const { data: myMembership, error: myMembershipError } = await admin
+          .from("group_members").select("home_state").eq("group_id", group.id).eq("user_id", user.id).maybeSingle();
+        if (myMembershipError) return respond({ error: myMembershipError.message }, 500);
+        homeState = myMembership?.home_state ?? null;
         if (!homeState) {
-          const { data: available } = await admin
+          // Skip states another member already calls home; group_members has a
+          // unique (group_id, home_state) index even when the owner lost the state.
+          const { data: takenHomes, error: takenError } = await admin
+            .from("group_members").select("home_state").eq("group_id", group.id).not("home_state", "is", null);
+          if (takenError) return respond({ error: takenError.message }, 500);
+          let query = admin
             .from("season_territories")
             .select("territory_id")
             .eq("season_id", season.id)
             .is("owner_id", null)
-            .eq("contested", false)
-            .order("territory_id")
-            .limit(1)
-            .maybeSingle();
+            .eq("contested", false);
+          const taken = (takenHomes ?? []).map((row: { home_state: string | null }) => row.home_state).filter(Boolean) as string[];
+          if (taken.length > 0) query = query.not("territory_id", "in", `(${taken.join(",")})`);
+          const { data: available, error: availableError } = await query.order("territory_id").limit(1).maybeSingle();
+          if (availableError) return respond({ error: availableError.message }, 500);
           homeState = available?.territory_id ?? null;
-        }
-        if (homeState) {
-          await admin.from("season_territories")
-            .update({ owner_id: user.id, hold_level: 1, updated_at: new Date().toISOString() })
-            .eq("season_id", season.id)
-            .eq("territory_id", homeState)
-            .is("owner_id", null);
-          await admin.from("player_actions").upsert({ season_id: season.id, user_id: user.id, actions_remaining: 3 });
-          await admin.from("profiles").update({ home_state: homeState, home_completed: false }).eq("id", user.id);
+          if (homeState) {
+            const { error: claimError } = await admin.from("season_territories")
+              .update({ owner_id: user.id, hold_level: 1, updated_at: new Date().toISOString() })
+              .eq("season_id", season.id)
+              .eq("territory_id", homeState)
+              .is("owner_id", null);
+            if (claimError) return respond({ error: claimError.message }, 500);
+            const { error: actionsError } = await admin.from("player_actions").upsert({ season_id: season.id, user_id: user.id, actions_remaining: 3 });
+            if (actionsError) return respond({ error: actionsError.message }, 500);
+            const { error: homeError } = await admin.from("group_members")
+              .update({ home_state: homeState, home_completed: false })
+              .eq("group_id", group.id)
+              .eq("user_id", user.id);
+            if (homeError) return respond({ error: homeError.message }, 500);
+          }
         }
       }
     }
 
     return respond({
       ok: true,
-      recovered: Boolean(existing),
       league: group.name,
       homeState,
       message: homeState

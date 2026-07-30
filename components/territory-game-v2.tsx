@@ -234,7 +234,16 @@ export default function TerritoryGameV2() {
       return;
     }
     setSnapshot(snapshotResponse.data as Snapshot);
-    if (operationResponse.data) setOperation(operationResponse.data as ActiveOperation);
+    if (operationResponse.data) {
+      setOperation(operationResponse.data as ActiveOperation);
+    } else {
+      // The server no longer has an active session. Clear a locally held
+      // operation once its question has expired so the arena can't get stuck;
+      // keep fresher ones in case this response raced a just-begun action.
+      setOperation((previous) =>
+        previous && new Date(previous.question.expires_at).getTime() < Date.now() ? null : previous,
+      );
+    }
   }, [groupId, notify]);
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./mobile-overrides.css";
+import "./organized-mobile.css";
 
 export const metadata: Metadata = {
   title: "Territory",

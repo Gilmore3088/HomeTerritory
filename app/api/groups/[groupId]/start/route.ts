@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST(_request: Request, context: RouteContext<"/api/groups/[groupId]/start">) {
+export async function POST(_request: Request, context: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await context.params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

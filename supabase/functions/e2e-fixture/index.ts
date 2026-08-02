@@ -92,11 +92,11 @@ Deno.serve(async (request: Request) => {
     if (createError || !created.user) throw new Error(createError?.message ?? "Could not create commissioner");
     commissionerId = created.user.id;
 
-    const { error: profileError } = await admin.from("profiles").insert({
+    const { error: profileError } = await admin.from("profiles").upsert({
       id: commissionerId,
       display_name: "E2E Alpha",
       is_bot: false,
-    });
+    }, { onConflict: "id" });
     if (profileError) throw profileError;
 
     const { data: group, error: groupError } = await admin.from("groups").insert({

@@ -30,11 +30,8 @@ Deno.serve(async (request: Request) => {
   const token = request.headers.get("x-territory-e2e");
   if (token !== configuration.fixture_token) return respond({ error: "Unauthorized" }, 401);
 
-  const { data: keys, error: keyError } = await admin.rpc("get_push_public_key");
-  if (keyError) return respond({ error: keyError.message }, 500);
   const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   if (!publishableKey) return respond({ error: "Public Supabase key unavailable" }, 500);
-  void keys;
 
   const functionHeaders = {
     "content-type": "application/json",
@@ -99,10 +96,8 @@ Deno.serve(async (request: Request) => {
     setup = await fixture("create");
     logs.push("isolated lobby created");
 
-    await Promise.all([
-      signup(setup.players[1], setup.password, setup.invite_code),
-      signup(setup.players[2], setup.password, setup.invite_code),
-    ]);
+    await signup(setup.players[1], setup.password, setup.invite_code);
+    await signup(setup.players[2], setup.password, setup.invite_code);
     logs.push("playtest signup and invite joining passed");
 
     const sessions = [];

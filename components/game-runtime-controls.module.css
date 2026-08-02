@@ -1,0 +1,153 @@
+.logout,
+.report {
+  position: fixed;
+  z-index: 180;
+  min-height: 38px;
+  border: 1px solid rgba(19, 34, 56, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #132238;
+  box-shadow: 0 8px 24px rgba(19, 34, 56, 0.1);
+  font: 800 12px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.logout {
+  top: 22px;
+  right: 184px;
+  padding: 0 13px;
+}
+
+.report {
+  top: 22px;
+  left: 22px;
+  padding: 0 14px;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(8, 19, 31, 0.78);
+  color: #fff;
+  backdrop-filter: blur(14px);
+}
+
+.logout:disabled,
+.report:disabled,
+.turn button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.turn {
+  position: fixed;
+  z-index: 145;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: min(430px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border: 1px solid rgba(19, 34, 56, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  color: #132238;
+  box-shadow: 0 18px 48px rgba(19, 34, 56, 0.2);
+  backdrop-filter: blur(18px);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.turn > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.turn span,
+.turn strong,
+.turn small {
+  display: block;
+}
+
+.turn span {
+  margin-bottom: 3px;
+  color: #718092;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+
+.turn strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.turn small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #6a7889;
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yourTurn {
+  border-color: rgba(11, 111, 155, 0.3);
+}
+
+.waiting {
+  background: rgba(247, 249, 250, 0.98);
+}
+
+.turn button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 13px;
+  background: #132238;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+:global(body[data-territory-waiting="true"] [class*="territory-game-v2-module"][class*="__territorySheet"] button:not([aria-label])) {
+  pointer-events: none !important;
+  opacity: 0.42 !important;
+}
+
+:global(body[data-territory-waiting="true"] [class*="territory-game-v2-module"][class*="__missionDock"]:not([class*="__missionDanger"]) button) {
+  pointer-events: none !important;
+  opacity: 0.42 !important;
+}
+
+@media (max-width: 860px) {
+  .logout {
+    top: calc(13px + env(safe-area-inset-top));
+    right: 66px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 12px;
+    box-shadow: none;
+    font-size: 11px;
+  }
+
+  .report {
+    top: calc(13px + env(safe-area-inset-top));
+    left: 14px;
+    min-height: 36px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+
+  .turn {
+    right: 12px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 12px 13px;
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(19, 34, 56, 0.18);
+  }
+}

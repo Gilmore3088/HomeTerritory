@@ -16,13 +16,19 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const { data, error } = await supabase.rpc("run_daily_tick");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const [tick, recaps] = await Promise.all([
+    supabase.rpc("run_daily_tick"),
+    supabase.rpc("generate_due_recaps"),
+  ]);
+
+  if (tick.error) return NextResponse.json({ error: tick.error.message }, { status: 500 });
+  if (recaps.error) return NextResponse.json({ error: recaps.error.message }, { status: 500 });
 
   return NextResponse.json({
     ok: true,
     schedule: schedule ?? null,
-    result: data,
+    result: tick.data,
+    recapsGenerated: recaps.data,
     ranAt: new Date().toISOString(),
   });
 }

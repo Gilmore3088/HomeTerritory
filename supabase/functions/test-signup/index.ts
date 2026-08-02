@@ -81,42 +81,21 @@ Deno.serve(async (request: Request) => {
       .upsert({ id: user.id, display_name: displayName, is_bot: false }, { onConflict: "id" });
     if (profileError) return respond({ error: profileError.message }, 500);
 
-    const { data: existingMembership, error: membershipLookupError } = await admin
+    const { error: membershipError } = await admin.rpc("admin_add_group_member", {
+      p_group_id: group.id,
+      p_user_id: user.id,
+    });
+    if (membershipError) return respond({ error: membershipError.message }, 409);
+
+    const { data: membership, error: membershipLookupError } = await admin
       .from("group_members")
-      .select("group_id,color_index,home_state,home_completed")
+      .select("home_state,home_completed")
       .eq("group_id", group.id)
       .eq("user_id", user.id)
-      .maybeSingle();
-
+      .single();
     if (membershipLookupError) return respond({ error: membershipLookupError.message }, 500);
 
-    if (!existingMembership) {
-      const { count, error: countError } = await admin
-        .from("group_members")
-        .select("user_id", { count: "exact", head: true })
-        .eq("group_id", group.id);
-      if (countError) return respond({ error: countError.message }, 500);
-      if ((count ?? 0) >= 8) return respond({ error: "This playtest league is full." }, 409);
-
-      const { data: memberships, error: colorsError } = await admin
-        .from("group_members")
-        .select("color_index")
-        .eq("group_id", group.id);
-      if (colorsError) return respond({ error: colorsError.message }, 500);
-
-      const used = new Set((memberships ?? []).map((row: { color_index: number }) => row.color_index));
-      const colorIndex = Array.from({ length: 8 }, (_, index) => index).find((index) => !used.has(index));
-      if (colorIndex === undefined) return respond({ error: "No player color is available." }, 409);
-
-      const { error: memberError } = await admin.from("group_members").insert({
-        group_id: group.id,
-        user_id: user.id,
-        color_index: colorIndex,
-      });
-      if (memberError) return respond({ error: memberError.message }, 500);
-    }
-
-    let homeState = existingMembership?.home_state ?? null;
+    let homeState = membership.home_state ?? null;
 
     if (group.status === "active") {
       const { data: season, error: seasonError } = await admin

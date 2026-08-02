@@ -42,13 +42,25 @@ type RuntimeState = {
   movesRemaining: number;
   hasDefense: boolean;
   activeAttemptId: string | null;
+  recapToken: string | null;
 };
+
+type BusyAction = "turn" | "logout" | "report" | "alerts";
+
+function urlBase64ToUint8Array(value: string) {
+  const padding = "=".repeat((4 - value.length % 4) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((character) => character.charCodeAt(0)));
+}
 
 export default function GameRuntimeControls() {
   const [session, setSession] = useState<Session | null>(null);
   const [state, setState] = useState<RuntimeState | null>(null);
-  const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
+  const [busy, setBusy] = useState<BusyAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [alertsSupported, setAlertsSupported] = useState(false);
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
 
   const load = useCallback(async (activeSession: Session | null) => {
     if (!activeSession) {
@@ -73,9 +85,10 @@ export default function GameRuntimeControls() {
       return;
     }
 
-    const [snapshotResponse, sessionResponse] = await Promise.all([
+    const [snapshotResponse, sessionResponse, recapResponse] = await Promise.all([
       supabase.rpc("group_snapshot", { p_group_id: group.id }),
       supabase.rpc("get_my_active_session", { p_group_id: group.id }),
+      supabase.rpc("get_latest_group_recap", { p_group_id: group.id }),
     ]);
 
     if (snapshotResponse.error) {
@@ -85,6 +98,7 @@ export default function GameRuntimeControls() {
 
     const snapshot = snapshotResponse.data as Snapshot;
     const activeGameSession = (sessionResponse.data ?? null) as ActiveSession | null;
+    const recap = (recapResponse.data ?? null) as { share_token?: string } | null;
     const hasDefense = Boolean(snapshot.attacks?.some(
       (attack) => attack.defender_id === snapshot.current_user_id && attack.status === "contested",
     ));
@@ -99,6 +113,7 @@ export default function GameRuntimeControls() {
       movesRemaining: snapshot.actions_remaining ?? 0,
       hasDefense,
       activeAttemptId: activeGameSession?.question?.attempt_id ?? null,
+      recapToken: recap?.share_token ?? null,
     });
   }, []);
 
@@ -121,6 +136,20 @@ export default function GameRuntimeControls() {
       data.subscription.unsubscribe();
     };
   }, [load]);
+
+  useEffect(() => {
+    const supported = typeof window !== "undefined"
+      && "serviceWorker" in navigator
+      && "PushManager" in window
+      && "Notification" in window;
+    setAlertsSupported(supported);
+    if (!supported) return;
+
+    navigator.serviceWorker.register("/sw.js")
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((subscription) => setAlertsEnabled(Boolean(subscription)))
+      .catch(() => setAlertsEnabled(false));
+  }, []);
 
   useEffect(() => {
     if (!session) return;
@@ -189,6 +218,58 @@ export default function GameRuntimeControls() {
     window.location.reload();
   }
 
+  async function toggleAlerts() {
+    if (!state || !alertsSupported || busy) return;
+    setBusy("alerts");
+
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (subscription) {
+        await supabase.rpc("remove_push_subscription", { p_endpoint: subscription.endpoint });
+        await subscription.unsubscribe();
+        setAlertsEnabled(false);
+        setMessage("Defense alerts are off on this device.");
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setMessage("Notification permission was not granted.");
+        return;
+      }
+
+      const { data: publicKey, error: keyError } = await supabase.rpc("get_push_public_key");
+      if (keyError || !publicKey) throw new Error(keyError?.message ?? "Push key unavailable");
+
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(String(publicKey)),
+      });
+
+      const serialized = subscription.toJSON();
+      if (!serialized.endpoint || !serialized.keys?.p256dh || !serialized.keys?.auth) {
+        throw new Error("The browser returned an incomplete push subscription");
+      }
+
+      const { error: saveError } = await supabase.rpc("upsert_push_subscription", {
+        p_group_id: state.groupId,
+        p_endpoint: serialized.endpoint,
+        p_p256dh: serialized.keys.p256dh,
+        p_auth: serialized.keys.auth,
+      });
+      if (saveError) throw saveError;
+
+      setAlertsEnabled(true);
+      setMessage("Defense alerts are enabled on this device.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not update alerts");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function logout() {
     if (busy) return;
     setBusy("logout");
@@ -205,9 +286,17 @@ export default function GameRuntimeControls() {
 
   return (
     <>
-      <button type="button" className={styles.logout} onClick={logout} disabled={Boolean(busy)}>
-        {busy === "logout" ? "Signing out…" : "Log out"}
-      </button>
+      <div className={styles.accountActions}>
+        {state?.recapToken && <a className={styles.recap} href={`/recap/${state.recapToken}`}>Recap</a>}
+        {alertsSupported && state && (
+          <button type="button" className={styles.alerts} onClick={toggleAlerts} disabled={Boolean(busy)}>
+            {busy === "alerts" ? "Updating…" : alertsEnabled ? "Alerts on" : "Enable alerts"}
+          </button>
+        )}
+        <button type="button" className={styles.logout} onClick={logout} disabled={Boolean(busy)}>
+          {busy === "logout" ? "Signing out…" : "Log out"}
+        </button>
+      </div>
 
       {state?.activeAttemptId && (
         <button type="button" className={styles.report} onClick={reportQuestion} disabled={Boolean(busy)}>

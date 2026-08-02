@@ -1,3 +1,4 @@
+import DuelControl from "@/components/duel-control";
 import GameRuntimeControls from "@/components/game-runtime-controls";
 import TerritoryGameV2 from "@/components/territory-game-v2";
 
@@ -6,6 +7,7 @@ export default function HomePage() {
     <>
       <TerritoryGameV2 />
       <GameRuntimeControls />
+      <DuelControl />
     </>
   );
 }

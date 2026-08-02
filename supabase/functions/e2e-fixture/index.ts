@@ -6,6 +6,12 @@ const respond = (body: unknown, status = 200) => new Response(JSON.stringify(bod
   headers: { "content-type": "application/json" },
 });
 
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) return String((error as { message?: unknown }).message);
+  try { return JSON.stringify(error); } catch { return "Fixture operation failed"; }
+}
+
 function randomPassword() {
   const bytes = crypto.getRandomValues(new Uint8Array(18));
   const token = Array.from(bytes, (value) => value.toString(36)).join("").slice(0, 24);
@@ -141,6 +147,6 @@ Deno.serve(async (request: Request) => {
       await admin.from("profiles").delete().eq("id", commissionerId);
       await admin.auth.admin.deleteUser(commissionerId);
     }
-    return respond({ error: error instanceof Error ? error.message : "Fixture creation failed" }, 500);
+    return respond({ error: errorMessage(error) }, 500);
   }
 });

@@ -1,18 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "./mobile-overrides.css";
-import "./organized-mobile.css";
+import "./responsive.css";
 
 export const metadata: Metadata = {
   title: "Territory",
   description: "Sports trivia that changes the map.",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#F2EFE4",
+  themeColor: "#132238",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

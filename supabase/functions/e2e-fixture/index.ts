@@ -49,6 +49,16 @@ Deno.serve(async (request: Request) => {
       .eq("group_id", run.group_id);
     const userIds = (memberships ?? []).map((row: { user_id: string }) => row.user_id);
 
+    if (userIds.length) {
+      const { data: reports } = await admin
+        .from("question_reports")
+        .select("id,question_id")
+        .in("reported_by", userIds);
+      const questionIds = [...new Set((reports ?? []).map((row: { question_id: string }) => row.question_id))];
+      if (questionIds.length) await admin.from("questions").update({ active: true }).in("id", questionIds);
+      if (reports?.length) await admin.from("question_reports").delete().in("id", reports.map((row: { id: string }) => row.id));
+    }
+
     await admin.from("groups").delete().eq("id", run.group_id);
     if (userIds.length) await admin.from("profiles").delete().in("id", userIds);
     await Promise.all(userIds.map((userId) => admin.auth.admin.deleteUser(userId)));

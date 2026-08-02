@@ -25,9 +25,9 @@ declare
   v_test boolean;
   v_answer text;
 begin
-  select gs into v_session
-  from public.game_sessions gs
-  where gs.id=p_session_id;
+  select * into v_session
+  from public.game_sessions
+  where id=p_session_id;
 
   if not found or v_session.user_id<>auth.uid() then raise exception 'Test session not found'; end if;
 

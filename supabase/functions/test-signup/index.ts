@@ -7,7 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json",
 };
-const respond = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: corsHeaders });
+
+const respond = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -29,19 +31,23 @@ Deno.serve(async (request: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !serviceKey) return respond({ error: "Signup service is not configured." }, 500);
 
-    const admin = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     const { data: group, error: groupError } = await admin
       .from("groups")
-      .select("id,name,status,test_mode")
+      .select("id,name,status,test_mode,board_scope")
       .eq("invite_code", inviteCode)
       .eq("test_mode", true)
       .maybeSingle();
+
     if (groupError) return respond({ error: groupError.message }, 500);
     if (!group) return respond({ error: "That code is not an active playtest invite." }, 403);
 
     const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) return respond({ error: listError.message }, 500);
+
     const existing = listed.users.find((candidate) => candidate.email?.toLowerCase() === email) ?? null;
     let user = existing;
 
@@ -49,6 +55,7 @@ Deno.serve(async (request: Request) => {
       if (user.email_confirmed_at) {
         return respond({ error: "An account with that email already exists. Sign in instead." }, 409);
       }
+
       const { data: recovered, error: recoverError } = await admin.auth.admin.updateUserById(user.id, {
         password,
         email_confirm: true,
@@ -67,53 +74,104 @@ Deno.serve(async (request: Request) => {
       user = created.user;
     }
 
-    await admin.from("profiles").upsert({ id: user.id, display_name: displayName }, { onConflict: "id" });
+    if (!user) return respond({ error: "Account creation did not return a user." }, 500);
 
-    const { data: existingMembership } = await admin
+    const { error: profileError } = await admin
+      .from("profiles")
+      .upsert({ id: user.id, display_name: displayName, is_bot: false }, { onConflict: "id" });
+    if (profileError) return respond({ error: profileError.message }, 500);
+
+    const { data: existingMembership, error: membershipLookupError } = await admin
       .from("group_members")
-      .select("group_id,color_index")
+      .select("group_id,color_index,home_state,home_completed")
       .eq("group_id", group.id)
       .eq("user_id", user.id)
       .maybeSingle();
 
+    if (membershipLookupError) return respond({ error: membershipLookupError.message }, 500);
+
     if (!existingMembership) {
-      const { count } = await admin.from("group_members").select("user_id", { count: "exact", head: true }).eq("group_id", group.id);
+      const { count, error: countError } = await admin
+        .from("group_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("group_id", group.id);
+      if (countError) return respond({ error: countError.message }, 500);
       if ((count ?? 0) >= 8) return respond({ error: "This playtest league is full." }, 409);
-      const { data: memberships } = await admin.from("group_members").select("color_index").eq("group_id", group.id);
+
+      const { data: memberships, error: colorsError } = await admin
+        .from("group_members")
+        .select("color_index")
+        .eq("group_id", group.id);
+      if (colorsError) return respond({ error: colorsError.message }, 500);
+
       const used = new Set((memberships ?? []).map((row: { color_index: number }) => row.color_index));
       const colorIndex = Array.from({ length: 8 }, (_, index) => index).find((index) => !used.has(index));
       if (colorIndex === undefined) return respond({ error: "No player color is available." }, 409);
-      const { error: memberError } = await admin.from("group_members").insert({ group_id: group.id, user_id: user.id, color_index: colorIndex });
+
+      const { error: memberError } = await admin.from("group_members").insert({
+        group_id: group.id,
+        user_id: user.id,
+        color_index: colorIndex,
+      });
       if (memberError) return respond({ error: memberError.message }, 500);
     }
 
-    let homeState: string | null = null;
+    let homeState = existingMembership?.home_state ?? null;
+
     if (group.status === "active") {
-      const { data: season } = await admin.from("seasons").select("id").eq("group_id", group.id).eq("status", "active").maybeSingle();
+      const { data: season, error: seasonError } = await admin
+        .from("seasons")
+        .select("id,current_turn_user_id")
+        .eq("group_id", group.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (seasonError) return respond({ error: seasonError.message }, 500);
+
       if (season) {
-        const { data: existingHome } = await admin.from("profiles").select("home_state").eq("id", user.id).maybeSingle();
-        homeState = existingHome?.home_state ?? null;
         if (!homeState) {
-          const { data: available } = await admin
+          const territoryQuery = admin
             .from("season_territories")
             .select("territory_id")
             .eq("season_id", season.id)
             .is("owner_id", null)
             .eq("contested", false)
             .order("territory_id")
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
+
+          if (group.board_scope !== "fifty") territoryQuery.not("territory_id", "in", "(AK,HI)");
+
+          const { data: available, error: territoryError } = await territoryQuery.maybeSingle();
+          if (territoryError) return respond({ error: territoryError.message }, 500);
           homeState = available?.territory_id ?? null;
         }
+
         if (homeState) {
-          await admin.from("season_territories")
+          const { error: ownershipError } = await admin
+            .from("season_territories")
             .update({ owner_id: user.id, hold_level: 1, updated_at: new Date().toISOString() })
             .eq("season_id", season.id)
             .eq("territory_id", homeState)
             .is("owner_id", null);
-          await admin.from("player_actions").upsert({ season_id: season.id, user_id: user.id, actions_remaining: 3 });
-          await admin.from("profiles").update({ home_state: homeState, home_completed: false }).eq("id", user.id);
+          if (ownershipError) return respond({ error: ownershipError.message }, 500);
+
+          const { error: homeError } = await admin
+            .from("group_members")
+            .update({ home_state: homeState, home_completed: false })
+            .eq("group_id", group.id)
+            .eq("user_id", user.id);
+          if (homeError) return respond({ error: homeError.message }, 500);
         }
+
+        const { error: actionError } = await admin.from("player_actions").upsert({
+          season_id: season.id,
+          user_id: user.id,
+          actions_remaining: season.current_turn_user_id === user.id ? 3 : 0,
+          last_refresh_on: new Date().toISOString().slice(0, 10),
+        }, { onConflict: "season_id,user_id" });
+        if (actionError) return respond({ error: actionError.message }, 500);
       }
     }
 

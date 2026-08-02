@@ -1,7 +1,16 @@
-.logout,
-.report {
+.accountActions {
   position: fixed;
   z-index: 180;
+  top: 22px;
+  right: 184px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.logout,
+.alerts,
+.report {
   min-height: 38px;
   border: 1px solid rgba(19, 34, 56, 0.12);
   border-radius: 999px;
@@ -12,13 +21,19 @@
   cursor: pointer;
 }
 
-.logout {
-  top: 22px;
-  right: 184px;
-  padding: 0 13px;
+.logout,
+.alerts {
+  position: relative;
+  padding: 0 12px;
+}
+
+.alerts {
+  color: #0b6f9b;
 }
 
 .report {
+  position: fixed;
+  z-index: 180;
   top: 22px;
   left: 22px;
   padding: 0 14px;
@@ -29,6 +44,7 @@
 }
 
 .logout:disabled,
+.alerts:disabled,
 .report:disabled,
 .turn button:disabled {
   opacity: 0.5;
@@ -121,14 +137,19 @@
 }
 
 @media (max-width: 860px) {
-  .logout {
+  .accountActions {
     top: calc(13px + env(safe-area-inset-top));
     right: 66px;
+    gap: 5px;
+  }
+
+  .logout,
+  .alerts {
     min-height: 36px;
-    padding: 0 10px;
+    padding: 0 9px;
     border-radius: 12px;
     box-shadow: none;
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .report {
@@ -149,5 +170,14 @@
     padding: 12px 13px;
     border-radius: 16px;
     box-shadow: 0 14px 36px rgba(19, 34, 56, 0.18);
+  }
+}
+
+@media (max-width: 390px) {
+  .alerts {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

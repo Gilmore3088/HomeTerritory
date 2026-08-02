@@ -42,6 +42,7 @@ type RuntimeState = {
   movesRemaining: number;
   hasDefense: boolean;
   activeAttemptId: string | null;
+  recapToken: string | null;
 };
 
 type BusyAction = "turn" | "logout" | "report" | "alerts";
@@ -84,9 +85,10 @@ export default function GameRuntimeControls() {
       return;
     }
 
-    const [snapshotResponse, sessionResponse] = await Promise.all([
+    const [snapshotResponse, sessionResponse, recapResponse] = await Promise.all([
       supabase.rpc("group_snapshot", { p_group_id: group.id }),
       supabase.rpc("get_my_active_session", { p_group_id: group.id }),
+      supabase.rpc("get_latest_group_recap", { p_group_id: group.id }),
     ]);
 
     if (snapshotResponse.error) {
@@ -96,6 +98,7 @@ export default function GameRuntimeControls() {
 
     const snapshot = snapshotResponse.data as Snapshot;
     const activeGameSession = (sessionResponse.data ?? null) as ActiveSession | null;
+    const recap = (recapResponse.data ?? null) as { share_token?: string } | null;
     const hasDefense = Boolean(snapshot.attacks?.some(
       (attack) => attack.defender_id === snapshot.current_user_id && attack.status === "contested",
     ));
@@ -110,6 +113,7 @@ export default function GameRuntimeControls() {
       movesRemaining: snapshot.actions_remaining ?? 0,
       hasDefense,
       activeAttemptId: activeGameSession?.question?.attempt_id ?? null,
+      recapToken: recap?.share_token ?? null,
     });
   }, []);
 
@@ -283,6 +287,7 @@ export default function GameRuntimeControls() {
   return (
     <>
       <div className={styles.accountActions}>
+        {state?.recapToken && <a className={styles.recap} href={`/recap/${state.recapToken}`}>Recap</a>}
         {alertsSupported && state && (
           <button type="button" className={styles.alerts} onClick={toggleAlerts} disabled={Boolean(busy)}>
             {busy === "alerts" ? "Updating…" : alertsEnabled ? "Alerts on" : "Enable alerts"}

@@ -8,16 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { createClient, type Session, type User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 import mapData from "@/data/us-states.json";
 import adjacencyData from "@/data/adjacency.json";
 import styles from "./territory-game-v2.module.css";
 
-const SUPABASE_URL = "https://gduvdnpxgdniogmxxlmg.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Xgxcnh4NUlZ7dkYHeC-xiw_mOmxQxGZ";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-});
+const supabase = createClient();
 
 const PATHS = mapData.paths as Record<string, string>;
 const CENTROIDS = mapData.centroids as Record<string, [number, number]>;

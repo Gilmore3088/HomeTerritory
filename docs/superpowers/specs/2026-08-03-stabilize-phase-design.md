@@ -71,8 +71,9 @@ cron tick endpoint. Every deviation is logged to
 (blocker / bug / papercut).
 
 **Code-level review.** Focused review of the server-authoritative surface:
-SQL functions in `supabase/migrations/`, the four API routes under
-`app/api/`, and RLS policies. Target bug classes playtesting can miss: race
+SQL functions in `supabase/migrations/`, the six API routes under
+`app/api/` (game answer/begin/report/snapshot, groups, cron tick), and RLS
+policies. Target bug classes playtesting can miss: race
 conditions on simultaneous attacks, timezone/UTC edge cases in the daily
 tick, state reachable only through refresh-mid-question, and auth edge cases
 from the triple-client bug.

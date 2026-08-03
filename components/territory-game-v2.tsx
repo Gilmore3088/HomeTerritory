@@ -10,7 +10,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import mapData from "@/data/us-states.json";
+import mapData from "@/data/us-states";
 import adjacencyData from "@/data/adjacency.json";
 import styles from "./territory-game-v2.module.css";
 

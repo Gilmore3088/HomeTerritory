@@ -68,13 +68,41 @@ test("full lobby-to-claim flow works for three players", async () => {
   // enforce_test_turn_session_trigger on game_sessions blocks any non-turn-holder from
   // starting a claim/attack/home/fortify action (defenses are exempt), so only Alice may
   // call game_begin_action here; Bob and Cara never need to act in this flow.
+  //
+  // start_season already assigns owner_id for each player's home territory before any
+  // 'home' action runs (20260730220000_add_playtest_turn_handoff.sql:219), with hold_level
+  // 1 for a human owner. So owner_id alone can't prove the 'home' action did anything --
+  // the meaningful signal is the hold_level 1 -> 2 transition that game_submit_answer's
+  // 'home' branch performs on a correct answer
+  // (20260730082200_handoff_answer_resolution.sql:24), which answerUntilResolved always
+  // supplies (it looks up and submits the actual correct answer each round).
+  const waBefore = started.territories.find((territory) => territory.id === "WA");
+  assert.equal(waBefore?.owner_id, started.current_user_id);
+  assert.equal(waBefore?.hold_level, 1, "home territory should start at hold_level 1 before the home action");
+
   const home = await begin(alice, seasonId, "WA", "home");
-  const result = await answerUntilResolved(alice, home.session_id);
-  assert.notEqual(result.status, "failed");
+  const homeResult = await answerUntilResolved(alice, home.session_id);
+  // 'home' actions always resolve to 'completed' regardless of correctness (see comment
+  // above) -- asserting the exact value here, not just notEqual('failed'), so a future
+  // change to that special case gets caught.
+  assert.equal(homeResult.status, "completed");
+
+  const afterHome = await snapshot(alice, groupId);
+  const waAfterHome = afterHome.territories.find((territory) => territory.id === "WA");
+  assert.equal(waAfterHome?.owner_id, afterHome.current_user_id);
+  assert.equal(waAfterHome?.hold_level, 2, "a correct home answer should raise hold_level from 1 to 2");
+
+  // Exercise the actual claim flow the test's name promises: OR is adjacent to WA
+  // (confirmed via `select adjacent from territories where id='WA'` -> {ID,OR,AK,HI}) and
+  // starts neutral, so Alice -- still the only current-turn player -- can claim it.
+  const claim = await begin(alice, seasonId, "OR", "claim");
+  const claimResult = await answerUntilResolved(alice, claim.session_id);
+  assert.equal(claimResult.status, "completed");
 
   const after = await snapshot(alice, groupId);
-  const wa = after.territories.find((territory) => territory.id === "WA");
-  assert.equal(wa?.owner_id, after.current_user_id);
+  const or = after.territories.find((territory) => territory.id === "OR");
+  assert.equal(or?.owner_id, after.current_user_id);
+  assert.equal(or?.hold_level, 1, "a freshly claimed state starts at hold_level 1");
 });
 
 test("wrong answers fail a session and the correct answer is disclosed", async () => {

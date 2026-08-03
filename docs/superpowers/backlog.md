@@ -1,0 +1,6 @@
+# Territory backlog
+
+| Phase | Item | Source |
+| --- | --- | --- |
+| P1-audit | `game_submit_answer` (20260730082200_handoff_answer_resolution.sql) special-cases `action_type = 'home'` to always return `status: 'completed'`, win or lose — a wrong answer only drops the resulting `hold_level` to 1 instead of 2, it never fails the session. Task 6's brief drafted its "wrong answer fails a session" test against a `home` action on that assumption; real behavior meant that test would have passed trivially without exercising failure at all. Confirmed intentional design (home ground can't be lost), not a bug — adapted the test to use a `claim` action instead, which does route through the real success/fail branch. | tests/db/engine.test.ts (task 6) |
+| P1-audit | `npx eslint` crashes repo-wide (`TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function`) on any file, including pre-existing ones (e.g. `lib/game-format.ts`) unrelated to this task's changes. Looks like an eslint-plugin-react / ESLint 10 / Next 16 version-detection incompatibility. Not caused by Task 6's new `tests/db/` files; `npm test`, `npm run typecheck`, and `npm run build` (the task's actual gates) all pass. Flagging for a future task since `npm run lint` is currently unusable. | tests/db/ verification pass (task 6) |

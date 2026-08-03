@@ -45,3 +45,22 @@ test("actions replenish by three per elapsed day with a cap of five", () => {
   assert.equal(refreshedActions({ currentActions: 0, elapsedDays: 1 }), 3);
   assert.equal(refreshedActions({ currentActions: 4, elapsedDays: 2 }), 5);
 });
+
+test("refreshedActions ignores negative elapsed days and respects the cap", () => {
+  assert.equal(refreshedActions({ currentActions: 2, elapsedDays: -3 }), 2);
+  assert.equal(refreshedActions({ currentActions: 5, elapsedDays: 0 }), 5);
+  assert.equal(refreshedActions({ currentActions: 0, elapsedDays: 100 }), 5);
+});
+
+test("normalizeAnswer flattens whitespace runs and strips symbols", () => {
+  assert.equal(normalizeAnswer("  L.A.\tLakers \n"), "l a lakers");
+  assert.equal(normalizeAnswer("49ers!"), "49ers");
+  assert.equal(normalizeAnswer(""), "");
+});
+
+test("canAttackTerritory treats missing adjacency entries as no border", () => {
+  assert.equal(
+    canAttackTerritory({ targetId: "HI", ownedTerritoryIds: ["CA"], adjacencyByTerritory: {} }),
+    false,
+  );
+});

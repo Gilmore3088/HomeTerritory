@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { dayNumber, edgeErrorMessage, timeLeft } from "@/lib/game-format";
 import mapData from "@/data/us-states";
 import adjacencyData from "@/data/adjacency.json";
 import styles from "./territory-game-v2.module.css";
@@ -154,32 +155,6 @@ type View = "map" | "standings" | "feed";
 
 function memberColor(member?: Pick<Member, "color_index"> | Pick<ScoreRow, "color_index"> | null) {
   return PLAYER_COLORS[member?.color_index ?? 0] ?? PLAYER_COLORS[0];
-}
-function dayNumber(season: Snapshot["season"]) {
-  if (!season) return 0;
-  if (season.current_day) return season.current_day;
-  return Math.max(1, Math.floor((Date.now() - new Date(season.started_at).getTime()) / 86_400_000) + 1);
-}
-function timeLeft(value: string) {
-  const ms = new Date(value).getTime() - Date.now();
-  if (ms <= 0) return "expired";
-  const hours = Math.floor(ms / 3_600_000);
-  const minutes = Math.floor((ms % 3_600_000) / 60_000);
-  return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
-}
-async function edgeErrorMessage(error: unknown) {
-  if (error && typeof error === "object" && "context" in error) {
-    const response = (error as { context?: Response }).context;
-    if (response) {
-      try {
-        const body = (await response.json()) as { error?: string };
-        if (body.error) return body.error;
-      } catch {
-        // Fall through to the normal Error message.
-      }
-    }
-  }
-  return error instanceof Error ? error.message : "The request could not be completed.";
 }
 
 export default function TerritoryGameV2() {

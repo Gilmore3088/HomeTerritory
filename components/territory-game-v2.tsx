@@ -11,6 +11,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { dayNumber, edgeErrorMessage, timeLeft } from "@/lib/game-format";
+import { isTerritoryActionBlocked } from "@/lib/game-rules";
 import mapData from "@/data/us-states";
 import adjacencyData from "@/data/adjacency.json";
 import styles from "./territory-game-v2.module.css";
@@ -722,7 +723,7 @@ function MissionDock({ snapshot, me, defense, homePending, busy, beginAction, re
     return <div className={styles.missionDock}><div><span>OPENING MOVE</span><h2>Secure {STATE_NAMES[me.home_state]}</h2><p>Answer once to raise your starting garrison.</p></div><button disabled={busy} onClick={() => beginAction("home", me.home_state!)}>Play question</button></div>;
   }
   if (snapshot.actions_remaining === 0) {
-    return <div className={styles.missionDock}><div><span>ACTIONS SPENT</span><h2>Fortify or wait</h2><p>Your own states can still be fortified for free.</p></div>{snapshot.group.test_mode && <button disabled={busy} onClick={refill}>Refill test actions</button>}</div>;
+    return <div className={styles.missionDock}><div><span>ACTIONS SPENT</span><h2>Hold the line</h2><p>Claiming, attacking and fortifying all spend a move. More arrive at the daily refresh.</p></div>{snapshot.group.test_mode && <button disabled={busy} onClick={refill}>Refill test actions</button>}</div>;
   }
   return <div className={styles.missionDock}><div><span>YOUR MOVE</span><h2>Choose a border state</h2><p>Tap a neighboring state to claim or attack.</p></div><div className={styles.actionCount}>{snapshot.actions_remaining}<small>left</small></div></div>;
 }
@@ -740,13 +741,18 @@ function TerritorySheet({ territory, owner, currentUser, homeState, action, canT
   onAction: () => void;
 }) {
   const mine = territory.owner_id === currentUser;
-  const disabled = busy || territory.contested || Boolean(action && (action.kind === "claim" || action.kind === "attack") && (!canTarget || actionsRemaining === 0));
+  const disabled = busy || Boolean(action && isTerritoryActionBlocked({
+    kind: action.kind,
+    contested: territory.contested,
+    sharesBorder: canTarget,
+    actionsRemaining,
+  }));
   return (
     <aside className={styles.territorySheet}>
       <button className={styles.sheetHandle} onClick={onClose} aria-label="Close territory details" />
       <div className={styles.sheetTitle}><div><span>{territory.region}</span><h2>{STATE_NAMES[territory.id]}</h2></div><div className={styles.stateCode}>{territory.id}</div></div>
       <div className={styles.ownerRow}><span style={{ background: owner ? memberColor(owner) : NEUTRAL }} /><strong>{owner ? mine ? "Your territory" : owner.display_name : "Unclaimed"}</strong><small>Garrison {territory.hold_level}{homeState === territory.id ? " · Home" : ""}</small></div>
-      <p className={styles.sheetReason}>{territory.contested ? "An attack is already active here." : mine ? "Fortify once per day to increase the cost of stealing it." : canTarget ? "This state touches your border." : "You do not share a border with this state."}</p>
+      <p className={styles.sheetReason}>{territory.contested ? "An attack is already active here." : mine ? "Fortify once per day — it spends a move — to increase the cost of stealing it." : canTarget ? "This state touches your border." : "You do not share a border with this state."}</p>
       {action && <button className={`${styles.sheetAction} ${action.danger ? styles.sheetActionDanger : ""}`} disabled={disabled} onClick={onAction}>{action.label}</button>}
     </aside>
   );

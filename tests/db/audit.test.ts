@@ -466,22 +466,28 @@ test("with no actions remaining, claim and attack are rejected", async () => {
   assert.match(await beginExpectingError(players.Bo.client, seasonId, "OR", "attack"), /no moves remaining/i);
 });
 
-// Finding 4: `game_begin_action` charges an action for `fortify`, but the
-// action-spent card in components/territory-game-v2.tsx still promises "Your
-// own states can still be fortified for free" and TerritorySheet leaves the
-// fortify button enabled at zero actions. Un-skip once the copy and the engine
-// agree (either fortify is free again, or the UI stops promising it is).
-test("with no actions remaining, a player's own states can still be fortified", { skip: "Finding 4" }, async () => {
-  const { players, seasonId } = await startSeason([["Di", "WA"], ["Eli", "OR"]]);
+// Finding 4: `game_begin_action` charges an action for `fortify` alongside claim
+// and attack. That is the engine's intended contract; the UI was the side that
+// disagreed (it promised free fortifies and left the button enabled at zero
+// moves). The matching UI rule is covered by `isTerritoryActionBlocked` in
+// tests/game-rules.test.ts.
+test("fortify spends one move and is refused once moves run out", async () => {
+  const { players, groupId, seasonId } = await startSeason([["Di", "WA"], ["Eli", "OR"]]);
+
+  const session = await begin(players.Di.client, seasonId, "WA", "fortify");
+  const outcome = await answerUntilResolved(players.Di.client, session.session_id);
+  assert.equal(outcome.status, "completed");
+  const spent = await snapshot(players.Di.client, groupId);
+  assert.equal(spent.actions_remaining, 2, "a fortify costs exactly one move");
+
   await admin
     .from("player_actions")
     .update({ actions_remaining: 0, last_refresh_on: NO_REFILL_DATE })
     .eq("season_id", seasonId)
     .eq("user_id", players.Di.id);
+  await admin.from("fortify_log").delete().eq("season_id", seasonId).eq("user_id", players.Di.id);
 
-  const session = await begin(players.Di.client, seasonId, "WA", "fortify");
-  const outcome = await answerUntilResolved(players.Di.client, session.session_id);
-  assert.equal(outcome.status, "completed");
+  assert.match(await beginExpectingError(players.Di.client, seasonId, "WA", "fortify"), /no moves remaining/i);
 });
 
 // ---------------------------------------------------------------------------

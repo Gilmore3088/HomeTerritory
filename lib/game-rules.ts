@@ -33,6 +33,27 @@ export function canAttackTerritory(input: {
   );
 }
 
+/** Claim, attack and fortify each spend one of the day's moves. */
+export function actionSpendsMove(kind: string): boolean {
+  return kind === "claim" || kind === "attack" || kind === "fortify";
+}
+
+/** Only offensive moves need a shared border; you can always reach your own states. */
+export function actionRequiresBorder(kind: string): boolean {
+  return kind === "claim" || kind === "attack";
+}
+
+export function isTerritoryActionBlocked(input: {
+  kind: string;
+  contested: boolean;
+  sharesBorder: boolean;
+  actionsRemaining: number;
+}): boolean {
+  if (input.contested) return true;
+  if (actionRequiresBorder(input.kind) && !input.sharesBorder) return true;
+  return actionSpendsMove(input.kind) && input.actionsRemaining < 1;
+}
+
 export function refreshedActions(input: {
   currentActions: number;
   elapsedDays: number;

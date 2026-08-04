@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   canAttackTerritory,
+  isTerritoryActionBlocked,
   normalizeAnswer,
   refreshedActions,
   requiredCorrectForSteal,
@@ -61,6 +62,44 @@ test("normalizeAnswer flattens whitespace runs and strips symbols", () => {
 test("canAttackTerritory treats missing adjacency entries as no border", () => {
   assert.equal(
     canAttackTerritory({ targetId: "HI", ownedTerritoryIds: ["CA"], adjacencyByTerritory: {} }),
+    false,
+  );
+});
+
+// Finding 4: fortify spends one of the day's moves (game_begin_action charges it
+// alongside claim and attack), but the sheet only disabled the button for claim
+// and attack, so the fortify button stayed enabled at zero moves and threw.
+test("fortify is blocked at zero moves, like claim and attack", () => {
+  const own = { contested: false, sharesBorder: false, actionsRemaining: 0 };
+  assert.equal(isTerritoryActionBlocked({ kind: "fortify", ...own }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "claim", ...own, sharesBorder: true }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "attack", ...own, sharesBorder: true }), true);
+});
+
+// A player's own state is not necessarily adjacent to another of their states,
+// so the border rule must not be applied to fortify.
+test("fortify does not require a shared border, but claim and attack do", () => {
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "fortify", contested: false, sharesBorder: false, actionsRemaining: 1 }),
+    false,
+  );
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "claim", contested: false, sharesBorder: false, actionsRemaining: 3 }),
+    true,
+  );
+});
+
+test("a contested state blocks every action, and defense never spends a move", () => {
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "defend", contested: true, sharesBorder: false, actionsRemaining: 3 }),
+    true,
+  );
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "defend", contested: false, sharesBorder: false, actionsRemaining: 0 }),
+    false,
+  );
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "home", contested: false, sharesBorder: false, actionsRemaining: 0 }),
     false,
   );
 });

@@ -63,6 +63,10 @@ export interface Snapshot {
     started_at: string;
     ends_at: string;
     current_day?: number;
+    current_turn_user_id?: string;
+    current_turn_name?: string | null;
+    turn_number?: number;
+    turn_started_at?: string;
   };
   members: Member[];
   territories: Territory[];
@@ -70,6 +74,7 @@ export interface Snapshot {
   scores: ScoreRow[];
   activity: FeedRow[];
   actions_remaining: number;
+  is_my_turn?: boolean;
 }
 export interface Question {
   attempt_id: string;

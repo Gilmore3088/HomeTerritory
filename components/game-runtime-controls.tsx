@@ -1,124 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useSupabaseSession } from "@/hooks/use-supabase-session";
-import { pickActiveGroup } from "@/lib/game-selection";
+import { useGameData } from "@/hooks/game-data-context";
 import styles from "./game-runtime-controls.module.css";
 
 const supabase = createClient();
 
-type GroupRow = {
-  id: string;
-  status: "lobby" | "active" | "ended";
-};
-
-type Snapshot = {
-  group: { id: string; status: string; test_mode?: boolean };
-  season: null | {
-    status: string;
-    current_turn_name?: string | null;
-    turn_number?: number;
-  };
-  attacks?: Array<{ defender_id: string; status: string }>;
-  current_user_id: string;
-  actions_remaining: number;
-  is_my_turn?: boolean;
-};
-
-type ActiveSession = {
-  question?: { attempt_id?: string };
-};
-
-type RuntimeState = {
-  groupId: string;
-  testMode: boolean;
-  isMyTurn: boolean;
-  currentTurnName: string;
-  turnNumber: number;
-  movesRemaining: number;
-  hasDefense: boolean;
-  activeAttemptId: string | null;
-};
-
 export default function GameRuntimeControls() {
-  const { session } = useSupabaseSession();
-  const [state, setState] = useState<RuntimeState | null>(null);
+  const { session, snapshot, operation, loadSnapshot } = useGameData();
   const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [signedIn, setSignedIn] = useState(Boolean(session));
 
-  // Dropping the previous player's runtime state belongs to the sign-out
-  // transition itself, not to an effect: React re-renders with the cleared
-  // state before anything paints, so a sign-in on the same page never shows
-  // the previous account's turn banner.
-  if (Boolean(session) !== signedIn) {
-    setSignedIn(Boolean(session));
-    if (!session) setState(null);
-  }
-
-  const load = useCallback(async (activeSession: Session | null) => {
-    if (!activeSession) return;
-
-    const { data: groupData, error: groupError } = await supabase.rpc("get_my_groups");
-    if (groupError) {
-      setMessage(groupError.message);
-      return;
-    }
-
-    const groups = (groupData ?? []) as GroupRow[];
-    const saved = window.localStorage.getItem("territory_group");
-    const groupId = pickActiveGroup(groups, saved);
-    const group = groups.find((row) => row.id === groupId);
-
-    if (!group) {
-      setState(null);
-      return;
-    }
-
-    const [snapshotResponse, sessionResponse] = await Promise.all([
-      supabase.rpc("group_snapshot", { p_group_id: group.id }),
-      supabase.rpc("get_my_active_session", { p_group_id: group.id }),
-    ]);
-
-    if (snapshotResponse.error) {
-      setMessage(snapshotResponse.error.message);
-      return;
-    }
-
-    const snapshot = snapshotResponse.data as Snapshot;
-    const activeGameSession = (sessionResponse.data ?? null) as ActiveSession | null;
-    const hasDefense = Boolean(snapshot.attacks?.some(
-      (attack) => attack.defender_id === snapshot.current_user_id && attack.status === "contested",
-    ));
-
-    setMessage(null);
-    setState({
-      groupId: group.id,
+  const state = useMemo(() => {
+    if (!session || !snapshot) return null;
+    const hasDefense = Boolean(
+      snapshot.attacks?.some((a) => a.defender_id === snapshot.current_user_id && a.status === "contested"),
+    );
+    return {
+      groupId: snapshot.group.id,
       testMode: Boolean(snapshot.group.test_mode),
       isMyTurn: snapshot.is_my_turn !== false,
       currentTurnName: snapshot.season?.current_turn_name ?? "Another player",
       turnNumber: snapshot.season?.turn_number ?? 1,
       movesRemaining: snapshot.actions_remaining ?? 0,
       hasDefense,
-      activeAttemptId: activeGameSession?.question?.attempt_id ?? null,
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!session) return;
-    const refresh = () => void load(session);
-    refresh();
-    const interval = window.setInterval(refresh, 5_000);
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
+      activeAttemptId: operation?.question?.attempt_id ?? null,
     };
-  }, [session, load]);
+  }, [session, snapshot, operation]);
 
   const waiting = useMemo(
     () => Boolean(state?.testMode && !state.isMyTurn && !state.hasDefense && !state.activeAttemptId),
@@ -141,13 +50,13 @@ export default function GameRuntimeControls() {
 
     if (error) {
       setMessage(error.message);
-      await load(session);
+      await loadSnapshot();
       return;
     }
 
     const result = data as { next_display_name?: string };
     setMessage(`${result.next_display_name ?? "The next player"} is up.`);
-    await load(session);
+    await loadSnapshot();
   }
 
   async function reportQuestion() {
@@ -173,7 +82,7 @@ export default function GameRuntimeControls() {
     // A question is only quarantined once three separate players report it, so
     // report_question is the one that knows which outcome the player just got.
     window.alert((data as { message?: string } | null)?.message ?? "Report filed and your move was refunded.");
-    window.location.reload();
+    await loadSnapshot();
   }
 
   async function logout() {

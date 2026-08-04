@@ -7,7 +7,7 @@
     overflow-x: hidden !important;
     overflow-y: auto !important;
     padding-bottom: calc(92px + env(safe-area-inset-bottom));
-    background: #f3f6f7 !important;
+    background: var(--paper) !important;
   }
 
   [class*="territory-game-v2-module"][class*="__gameHeader"] {
@@ -18,9 +18,9 @@
     z-index: 70;
     min-height: 64px;
     padding: calc(8px + env(safe-area-inset-top)) 14px 9px;
-    border-bottom: 1px solid rgba(19, 34, 56, 0.08);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 4px 18px rgba(19, 34, 56, 0.05);
+    border-bottom: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: 0 4px 18px rgba(17, 17, 17, 0.05);
     backdrop-filter: blur(18px);
   }
 
@@ -71,10 +71,10 @@
     gap: 0 !important;
     width: 100%;
     overflow: hidden;
-    border: 1px solid rgba(19, 34, 56, 0.08);
+    border: 1px solid var(--line);
     border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 8px 24px rgba(19, 34, 56, 0.06);
+    background: var(--card);
+    box-shadow: 0 8px 24px rgba(17, 17, 17, 0.06);
   }
 
   [class*="territory-game-v2-module"][class*="__hudMetric"] {
@@ -82,7 +82,7 @@
     min-width: 0;
     padding: 11px 8px !important;
     border: 0 !important;
-    border-right: 1px solid rgba(19, 34, 56, 0.08) !important;
+    border-right: 1px solid var(--line) !important;
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -111,10 +111,10 @@
     padding: 8px 4px;
     overflow: visible;
     transform: none !important;
-    border: 1px solid rgba(19, 34, 56, 0.08);
+    border: 1px solid var(--line);
     border-radius: 18px;
-    background: #fff;
-    filter: drop-shadow(0 10px 22px rgba(19, 34, 56, 0.08)) !important;
+    background: var(--card);
+    filter: drop-shadow(0 10px 22px rgba(17, 17, 17, 0.08)) !important;
   }
 
   [class*="territory-game-v2-module"][class*="__stateLabel"] {
@@ -143,20 +143,40 @@
   [class*="territory-game-v2-module"][class*="__frontRail"] button {
     flex: 0 0 auto;
     padding: 8px 11px !important;
-    border: 1px solid rgba(19, 34, 56, 0.08) !important;
-    background: #fff !important;
+    border: 1px solid var(--line) !important;
+    background: var(--card) !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
     font-size: 11px !important;
   }
 
   [class*="territory-game-v2-module"][class*="__frontRail"] [class*="__frontActive"] {
-    border-color: #132238 !important;
-    background: #132238 !important;
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
     color: #fff !important;
   }
 
-  [class*="territory-game-v2-module"][class*="__missionDock"],
+  [class*="territory-game-v2-module"][class*="__missionDock"] {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    order: 4;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0;
+    padding: 16px !important;
+    overflow: visible !important;
+    transform: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 18px !important;
+    background: var(--dock) !important;
+    box-shadow: 0 10px 28px rgba(17, 17, 17, 0.3) !important;
+    backdrop-filter: none !important;
+  }
+
   [class*="territory-game-v2-module"][class*="__territorySheet"] {
     position: relative !important;
     top: auto !important;
@@ -171,10 +191,10 @@
     padding: 16px !important;
     overflow: visible !important;
     transform: none !important;
-    border: 1px solid rgba(19, 34, 56, 0.08) !important;
+    border: 1px solid var(--line) !important;
     border-radius: 18px !important;
-    background: #fff !important;
-    box-shadow: 0 10px 28px rgba(19, 34, 56, 0.07) !important;
+    background: var(--card) !important;
+    box-shadow: 0 10px 28px rgba(17, 17, 17, 0.07) !important;
     backdrop-filter: none !important;
   }
 

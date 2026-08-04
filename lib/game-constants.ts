@@ -6,18 +6,19 @@ export const PATHS = mapData.paths as Record<string, string>;
 export const CENTROIDS = mapData.centroids as Record<string, [number, number]>;
 export const ADJ = adjacencyData.adjacency as Record<string, string[]>;
 export const PLAYER_COLORS = [
-  "#0B6E99",
-  "#7A4CB4",
-  "#1F8A5B",
-  "#D18B16",
-  "#D74B4B",
-  "#168B95",
-  "#B55E32",
-  "#52677F",
+  "#1D6FE0",
+  "#E0332F",
+  "#1F9D57",
+  "#E8A020",
+  "#7A4BD0",
+  "#138A95",
+  "#E2622F",
+  "#41506A",
 ];
-export const NEUTRAL = "#D8D9D2";
-export const INK = "#142034";
-export const DANGER = "#E34A34";
+export const NEUTRAL = "#E7E3D8";
+export const PAPER = "#FAF7EF";
+export const INK = "#111111";
+export const DANGER = "#E0332F";
 
 export const STATE_NAMES: Record<string, string> = {
   AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",

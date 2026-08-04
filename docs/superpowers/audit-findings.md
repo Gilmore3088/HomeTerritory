@@ -232,3 +232,16 @@ detail in `task-11-report.md`.
 | No console warnings in normal play (GoTrueClient warning and landing-page overlay issue fixed) | The triple-Supabase-client GoTrueClient warning was fixed in Task 1 (single shared client from `lib/supabase/client.ts`). The landing-page overlay issue (finding 17) was root-caused to a browser extension writing `data-scribe-recorder-ready` to `<html>` before hydration — external to the app, not reproducible in a clean profile, recommended no fix. The controller's click-through confirmed no other console warnings or errors during normal play. |
 | `territory-game-v2.tsx` no longer exists as a monolith; all files under ~300 lines | `ls components/territory-game-v2.tsx` → no such file (deleted in `116e9d0`, "replace monolith with coordinator and focused components"). Coordinator is `components/territory-game.tsx` (119 lines) plus focused files (`game-shell.tsx` 158, `game-runtime-controls.tsx` 227, `question-arena.tsx` 96, `auth-stage.tsx` 87, `lobby-stage.tsx` 75, `territory-map.tsx` 71, `league-entry.tsx` 67, `hooks/use-game-state.ts` 159, `lib/*.ts` all ≤100). `wc -l components/*.tsx hooks/*.ts lib/*.ts \| awk '$1 > 300'` prints only wc's own multi-file "total" summary line (1474, an artifact of summing all files, not a per-file violation) — no individual app source file exceeds 300 lines; the largest is `game-runtime-controls.tsx` at 227. `tests/db/audit.test.ts` (1088 lines) is a known, backlogged test-file exception (`P2-test-split` in the backlog), not app source, and is excluded from this gate by design. |
 | Test suite covers game rules and critical DB functions; `npm test`, `npm run typecheck`, and `npm run build` all pass | `npm test`: 27 pass, 0 fail. `npm run test:db`: 36 pass, 0 fail (after one Kong-restart retry for a GoTrue flake). `npm run test:smoke`: 1 pass, 0 fail. `npm run typecheck`: clean, exit 0. `npm run build`: clean, exit 0. `npm run lint`: clean, exit 0, no output (finding 16's lint-rule violations lived entirely in the now-deleted monolith and were also independently fixed in `89f13ed`). |
+
+**Coverage caveat (final review):** the numbers above, including the
+security-guard probes in `tests/db/audit.test.ts`, are only verified to pass
+*locally*, against a hand-run Supabase stack. `.github/workflows/ci.yml` runs
+`npm test` (game rules and pure-function unit tests), `npm run typecheck`, and
+`npm run build` on every push and pull request, but it does **not** run `npm
+run test:db` or `npm run test:smoke` -- there is no Supabase service
+container wired into the workflow, so those suites never execute in CI. In
+other words, `main` is not currently gated on the DB-engine tests, the
+security-definer grant audits, or the smoke test; a regression in any of them
+would only be caught by someone remembering to run `npm run test:db` /
+`npm run test:smoke` by hand before merging. See
+`docs/superpowers/backlog.md` for the follow-up to close this gap.

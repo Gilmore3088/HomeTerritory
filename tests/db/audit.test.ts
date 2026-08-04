@@ -651,8 +651,8 @@ test("the trailing player needs one fewer correct answer than the leader for the
 // but the answer timer and the "TIER n" header both read the row's *stored*
 // tier. An empirically hard question stored as tier 1 got 30 seconds instead of
 // 45, and a two-answer attack could be labelled TIER 3.
-test("the served tier is the adaptive tier that selection and the timer both use", async () => {
-  const { players, seasonId } = await startSeason([["Ola", "CA"], ["Pau", "FL"]]);
+test("the served tier is the adaptive tier that selection, the timer and resume all use", async () => {
+  const { players, groupId, seasonId } = await startSeason([["Ola", "CA"], ["Pau", "FL"]]);
 
   // Deliberately not OR, for the same reason as the option-order probe above.
   const bank = await admin
@@ -678,6 +678,33 @@ test("the served tier is the adaptive tier that selection and the timer both use
 
     const windowMs = new Date(session.question.expires_at).getTime() - Date.now();
     assert.ok(windowMs > 35_000, `a tier 3 question gets 45 seconds, got ${Math.round(windowMs / 1000)}s`);
+
+    // The client overwrites its live operation from get_my_active_session on
+    // every realtime event and every 20s poll, so the resume payload has to
+    // carry the same tier the question was served with.
+    const resumed = await players.Ola.client.rpc("get_my_active_session", { p_group_id: groupId });
+    assert.equal(resumed.error, null);
+    assert.equal(
+      (resumed.data as BeginResult).question.tier,
+      session.question.tier,
+      "a resume must not flip the header back to the stored tier",
+    );
+
+    // And it must be the tier stored on the attempt, not a fresh computation:
+    // attempt_count and correct_count move as other players answer, so a
+    // recomputed tier could change under the player mid-question. Flip the stats
+    // to what would recompute as tier 1 and confirm the answer stays 3.
+    const flipped = await admin
+      .from("questions").update({ attempt_count: 40, correct_count: 39 }).eq("id", subject.id);
+    assert.equal(flipped.error, null);
+
+    const afterFlip = await players.Ola.client.rpc("get_my_active_session", { p_group_id: groupId });
+    assert.equal(afterFlip.error, null);
+    assert.equal(
+      (afterFlip.data as BeginResult).question.tier,
+      3,
+      "resume must return the tier the attempt was served with, not a recomputed one",
+    );
   } finally {
     await admin.from("questions").update({ tier: subject.tier, attempt_count: 0, correct_count: 0 }).eq("id", subject.id);
     if (parkedIds.length) await admin.from("questions").update({ active: true }).in("id", parkedIds);

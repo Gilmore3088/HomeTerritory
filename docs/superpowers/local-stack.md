@@ -86,6 +86,25 @@ Then open `http://localhost:3000`. The landing page should render, and
 signing in as a nonexistent user should fail cleanly — that failure is the
 signal you're talking to the empty local database, not production.
 
+## Advancing the day locally
+
+`/api/cron/tick` is the only thing that advances a season's day, applies
+twilight decay, resolves attacks, runs bot turns and ends seasons — nothing
+does it implicitly any more. To advance a day against a dev server:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/tick
+```
+
+`CRON_SECRET` comes from `.env.local`; the bearer token is the whole auth
+contract, so a request without it gets a `401`. The tick is idempotent per
+group-local day, so calling it twice in one day is a no-op — to see it score,
+backdate the season first:
+
+```sql
+update public.seasons set last_scored_on = '2020-01-01' where id = '<season-id>';
+```
+
 ## Serving the signup edge function
 
 ```bash
@@ -95,6 +114,13 @@ supabase functions serve test-signup
 Serves `supabase/functions/test-signup` against the local stack (reads env
 vars from `supabase/functions/.env` if present, otherwise inherits the
 running stack's local Postgres/API connection).
+
+The stack already runs an edge runtime container, so `test-signup` is
+reachable at `http://127.0.0.1:55321/functions/v1/test-signup` without the
+command above. That container caches function modules: after editing
+`supabase/functions/test-signup/index.ts`, run
+`docker restart supabase_edge_runtime_HomeTerritory`. `supabase db reset` does
+not restart it.
 
 ## Exporting test env vars
 

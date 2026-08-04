@@ -671,16 +671,18 @@ test("a defense answered after the deadline cannot strengthen the new owner", as
   assert.equal(territory(after, "OR").hold_level, 1, "the late defense must not fortify the attacker's new state");
 });
 
-// Finding 5: `game_begin_action` only checks for a contested attack at begin
-// time, so two players can each open an attack session on the same state. The
-// first streak to finish inserts the attack row; the second violates
-// one_contested_attack_per_territory and the raw Postgres error reaches the
-// player, rolling back their winning answer while their spent action stays
-// spent. Un-skip once the loser gets a clean "already contested" outcome.
-test("a second attacker on the same state fails cleanly instead of raising a constraint error", { skip: "Finding 5" }, async () => {
-  const { players, seasonId } = await startSeason([["Rhea", "WA"], ["Sten", "OR"], ["Tam", "ID"]]);
+// Finding 5: `game_begin_action` only checked for a contested attack at begin
+// time, so two players could each open an attack session on the same state. The
+// first streak to finish inserted the attack row; the second violated
+// one_contested_attack_per_territory and the raw Postgres error reached the
+// player, rolling back their winning answer while their spent move stayed
+// spent. The loser now gets a clean `void` and the move back.
+test("a second attacker on the same state fails cleanly instead of raising a constraint error", async () => {
+  const { players, groupId, seasonId } = await startSeason([["Rhea", "WA"], ["Sten", "OR"], ["Tam", "ID"]]);
   const first = await begin(players.Rhea.client, seasonId, "OR", "attack");
   const second = await begin(players.Tam.client, seasonId, "OR", "attack");
+  const spent = await snapshot(players.Tam.client, groupId);
+  assert.equal(spent.actions_remaining, 2, "the second attacker's move is spent at begin time");
 
   const firstOutcome = (await answerUntilResolved(players.Rhea.client, first.session_id)) as { status: string };
   assert.equal(firstOutcome.status, "contested");
@@ -691,10 +693,10 @@ test("a second attacker on the same state fails cleanly instead of raising a con
   } catch (error) {
     secondStatus = `threw: ${(error as Error).message}`;
   }
-  assert.ok(
-    secondStatus === "failed" || secondStatus === "void",
-    `the losing attacker should get a clean outcome, got ${secondStatus}`,
-  );
+  assert.equal(secondStatus, "void", "the losing attacker should get a clean outcome, not a constraint error");
+
+  const after = await snapshot(players.Tam.client, groupId);
+  assert.equal(after.actions_remaining, 3, "a move that bought nothing is returned");
 });
 
 // Finding 6: run_test_bot_turns is SECURITY DEFINER, performs no membership or

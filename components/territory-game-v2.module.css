@@ -18,3 +18,8 @@
 .loadErrorCard{display:flex;flex-direction:column;gap:14px;align-items:flex-start;max-width:420px;padding:28px;border:1px solid var(--line);border-radius:18px;background:var(--card,#fff);color:var(--ink)}
 .loadErrorCard h1{font-family:var(--font-display,inherit);font-size:1.6rem;line-height:1.1;margin:0}
 .loadErrorCard p{margin:0;color:var(--muted);overflow-wrap:anywhere}
+
+/* Action pips (Phase B): 0-5 moves visualised under the Actions HUD metric. */
+.hudPips{display:flex;gap:3px;margin-top:2px}
+.hudPips i{width:6px;height:6px;border-radius:50%;background:var(--neutral,#e7e3d8);border:1px solid var(--neutral-line,#c8c2b2)}
+.hudPips i.hudPipFilled{background:var(--mine,#1d6fe0);border-color:var(--mine-ink,#0a4fb0)}

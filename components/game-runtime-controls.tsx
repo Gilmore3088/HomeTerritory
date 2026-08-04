@@ -128,8 +128,8 @@ export default function GameRuntimeControls() {
               {message ?? (state.isMyTurn
                 ? `${state.movesRemaining} move${state.movesRemaining === 1 ? "" : "s"} remaining`
                 : state.hasDefense
-                  ? "You may defend while waiting."
-                  : "The map is read-only until your turn.")}
+                  ? "You are under attack — defend now, it costs no move."
+                  : `It's ${state.currentTurnName}'s turn. You can defend if attacked.`)}
             </small>
           </div>
           {state.isMyTurn && (

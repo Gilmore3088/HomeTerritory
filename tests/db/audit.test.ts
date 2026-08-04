@@ -1080,19 +1080,10 @@ test("no security-definer function in public is authenticated-executable outside
     // `supabase.rpc('is_group_member', ...)` calls. Not itself in
     // CLIENT_CALLABLE because no component calls it directly.
     "is_group_member(p_group_id uuid, p_user_id uuid)",
-    // `create_group` is the v1 league-creation RPC superseded by
-    // `create_group_v2` (finding 13): no client code calls it any more
-    // (`grep -rn "\"create_group\"" components hooks app` -- no hits, only
-    // `create_group_v2`), but its `grant execute ... to authenticated` from
-    // 202607300001_initial_schema.sql / 202607300728_fix_create_group_invite_
-    // generator.sql was never revoked when the v1 API route was deleted
-    // (8bf8aae). It is internally guarded (requires auth.uid(), validates its
-    // own input) so this is not an auth bypass, but it is dead-code drift the
-    // allowlist should surface rather than silently relabel as
-    // client-callable. Tracked in docs/superpowers/backlog.md for a future
-    // migration to revoke; kept here, explicitly, so this probe passes against
-    // today's actual grants without pretending the client calls it.
-    "create_group(p_name text, p_sports text[], p_season_length integer)",
+    // `create_group` (v1) was the last entry here: superseded by
+    // `create_group_v2`, dead grant revoked in
+    // 20260804230000_defend_reroll_cap_and_grant_hygiene.sql, and its
+    // revocation is asserted in tests/db/defend-reroll.test.ts.
   ];
 
   const { data, error } = await admin.rpc("security_definer_grants");

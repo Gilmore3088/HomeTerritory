@@ -556,32 +556,78 @@ test("get_my_active_session resumes an unfinished question after a refresh", asy
   assert.equal(active.question.text, session.question.text);
 });
 
-// Finding 1: get_my_active_session returns questions.options verbatim instead of
-// shuffling it the way pick_next_question does, and every seeded multiple-choice
-// row stores the correct answer at index 0. Any resume -- including the
-// automatic 5s/20s snapshot polls that overwrite the live operation -- reveals
-// the answer. Un-skip once the resume path shuffles.
-test("resuming a question does not reveal the answer through option order", { skip: "Finding 1" }, async () => {
+// Finding 1: get_my_active_session used to return questions.options verbatim
+// instead of shuffling it the way pick_next_question does, and every seeded
+// multiple-choice row stores the correct answer at index 0. Any resume --
+// including the automatic 5s/20s snapshot polls that overwrite the live
+// operation -- revealed the answer.
+//
+// The probe widens one existing question to eight options with the answer first
+// so the served order is the only variable: a verbatim resume pins the answer to
+// index 0 on all ten rounds, a per-attempt shuffle does so with probability
+// 8^-10.
+test("resuming a question serves a stable option order that does not leak the answer", async () => {
   const { players, groupId, seasonId } = await startSeason([["Mona", "WA"], ["Nils", "FL"]]);
 
-  // Only multiple-choice rows carry options, and pick_next_question's adaptive
-  // ordering (finding 21) can serve any stored tier, so park the free_fill rows
-  // for this territory to keep the probe deterministic.
-  await admin.from("questions").update({ active: false }).eq("territory_id", "OR").eq("format", "free_fill");
-  try {
-    const session = await begin(players.Mona.client, seasonId, "OR", "claim");
-    assert.equal(session.question.format, "multiple_choice");
+  const bank = await admin
+    .from("questions")
+    .select("id,options,correct_answer")
+    .eq("territory_id", "OR")
+    .eq("format", "multiple_choice")
+    .eq("active", true)
+    .order("id")
+    .limit(1)
+    .single();
+  assert.equal(bank.error, null);
+  const subject = bank.data as { id: string; options: string[]; correct_answer: string };
+  const options = [subject.correct_answer, ...Array.from({ length: 7 }, (_, index) => `Audit decoy ${index}`)];
 
-    const answer = await correctAnswerFor(session.session_id);
-    let leaked = 0;
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const resumed = await players.Mona.client.rpc("get_my_active_session", { p_group_id: groupId });
-      assert.equal(resumed.error, null);
-      if ((resumed.data as BeginResult).question.options[0] === answer) leaked += 1;
+  const parked = await admin
+    .from("questions")
+    .update({ active: false })
+    .eq("territory_id", "OR")
+    .neq("id", subject.id)
+    .select("id");
+  assert.equal(parked.error, null);
+  const widened = await admin.from("questions").update({ options }).eq("id", subject.id);
+  assert.equal(widened.error, null);
+
+  try {
+    const ROUNDS = 10;
+    let answerFirst = 0;
+    for (let round = 0; round < ROUNDS; round += 1) {
+      await admin
+        .from("player_actions")
+        .update({ actions_remaining: 3, last_refresh_on: NO_REFILL_DATE })
+        .eq("season_id", seasonId)
+        .eq("user_id", players.Mona.id);
+
+      const session = await begin(players.Mona.client, seasonId, "OR", "claim");
+      assert.equal(session.question.format, "multiple_choice");
+      assert.deepEqual([...session.question.options].sort(), [...options].sort(), "no option may be dropped");
+
+      const answer = await correctAnswerFor(session.session_id);
+      if (session.question.options[0] === answer) answerFirst += 1;
+
+      // Every poll re-reads the active session. The order must not move while
+      // the player is looking at it.
+      for (let poll = 0; poll < 2; poll += 1) {
+        const resumed = await players.Mona.client.rpc("get_my_active_session", { p_group_id: groupId });
+        assert.equal(resumed.error, null);
+        assert.deepEqual(
+          (resumed.data as BeginResult).question.options,
+          session.question.options,
+          "a resume must serve the same option order the question was opened with",
+        );
+      }
+
+      await admin.from("game_sessions").update({ status: "void" }).eq("id", session.session_id);
     }
-    assert.ok(leaked < 8, "the correct answer must not be pinned to the first option on resume");
+    assert.ok(answerFirst < ROUNDS, "the correct answer must not be pinned to the first option");
   } finally {
-    await admin.from("questions").update({ active: true }).eq("territory_id", "OR").eq("format", "free_fill");
+    await admin.from("questions").update({ options: subject.options }).eq("id", subject.id);
+    const ids = (parked.data ?? []).map((row) => (row as { id: string }).id);
+    if (ids.length) await admin.from("questions").update({ active: true }).in("id", ids);
   }
 });
 

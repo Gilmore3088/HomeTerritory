@@ -10,7 +10,7 @@ import LeagueEntry from "./league-entry";
 import LobbyStage from "./lobby-stage";
 import GameShell from "./game-shell";
 import QuestionArena from "./question-arena";
-import { LeaguePicker, Loading } from "./game-overlays";
+import { LeaguePicker, Loading, LoadErrorScreen } from "./game-overlays";
 
 const supabase = createClient();
 
@@ -20,7 +20,7 @@ export default function TerritoryGame() {
     authReady,
     groups,
     groupId,
-    setGroupId,
+    selectGroup,
     snapshot,
     operation,
     setOperation,
@@ -30,6 +30,8 @@ export default function TerritoryGame() {
     setBusy,
     toast,
     notify,
+    loadError,
+    retryLoad,
     loadGroups,
     loadSnapshot,
     beginAction,
@@ -41,6 +43,10 @@ export default function TerritoryGame() {
 
   if (!authReady) return <Loading label="Loading the battlefield" />;
   if (!session) return <AuthStage notify={notify} />;
+  // The error branch MUST precede the groups branch: a failed get_my_groups
+  // for a returning player would otherwise render the first-run league screen
+  // and invite a duplicate league.
+  if (loadError) return <LoadErrorScreen error={loadError} onRetry={() => void retryLoad()} />;
   if (!groupId || groups.length === 0) {
     return <LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />;
   }
@@ -53,7 +59,6 @@ export default function TerritoryGame() {
         setOperation={setOperation}
         setResult={setResult}
         refresh={() => loadSnapshot()}
-        notify={notify}
       />
     );
   }
@@ -65,7 +70,7 @@ export default function TerritoryGame() {
         snapshot={snapshot}
         groups={groups}
         groupId={groupId}
-        setGroupId={setGroupId}
+        setGroupId={selectGroup}
         refresh={() => loadSnapshot()}
         reloadGroups={() => loadGroups()}
         notify={notify}
@@ -81,8 +86,7 @@ export default function TerritoryGame() {
           groups={groups}
           active={groupId}
           onPick={(id) => {
-            setGroupId(id);
-            window.localStorage.setItem("territory_group", id);
+            selectGroup(id);
             setLeaguePicker(false);
             setSelected(null);
             setFront(null);

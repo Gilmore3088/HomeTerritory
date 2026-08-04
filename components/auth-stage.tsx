@@ -20,7 +20,15 @@ export default function AuthStage({ notify }: { notify: (text: string, error?: b
     event.preventDefault();
     setBusy(true);
     if (mode === "signin") {
+      // supabase-js queues auth calls behind a shared Web Lock; if another
+      // window is starving it the promise can hang. The watchdog frees the
+      // button so the player can retry instead of staring at "Working".
+      const watchdog = window.setTimeout(() => {
+        setBusy(false);
+        notify("Sign-in is taking longer than expected. Check your connection and try again.", true);
+      }, 12_000);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
+      window.clearTimeout(watchdog);
       setBusy(false);
       if (error) notify(error.message, true);
       return;

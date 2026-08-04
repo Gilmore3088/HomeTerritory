@@ -9,16 +9,16 @@ import { Loading } from "./game-overlays";
 
 const supabase = createClient();
 
-export default function QuestionArena({ operation, result, setOperation, setResult, refresh, notify }: {
+export default function QuestionArena({ operation, result, setOperation, setResult, refresh }: {
   operation: ActiveOperation | null;
   result: ResultState | null;
   setOperation: (operation: ActiveOperation | null) => void;
   setResult: (result: ResultState | null) => void;
   refresh: () => void;
-  notify: (text: string, error?: boolean) => void;
 }) {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
   const timedOut = useRef(false);
   const question = operation?.question;
@@ -68,7 +68,9 @@ export default function QuestionArena({ operation, result, setOperation, setResu
     const { data, error } = await supabase.rpc("game_submit_answer", { p_session_id: operation.session_id, p_answer: value });
     setBusy(false);
     if (error) {
-      notify(error.message, true);
+      // A submit can fail terminally (session expired in another tab) — the
+      // player always gets a way off this screen, never a stuck card.
+      setSubmitError(error.message);
       return;
     }
     if (data.status === "active" && data.question) {
@@ -86,6 +88,20 @@ export default function QuestionArena({ operation, result, setOperation, setResu
     });
   }
 
+  if (submitError) {
+    return (
+      <main className={`${styles.resultPage} ${styles.resultFailure}`}>
+        <div className={styles.resultHalo} />
+        <section>
+          <span>PROBLEM</span>
+          <h1>That answer didn&apos;t go through</h1>
+          <p>{submitError}</p>
+          <button onClick={() => setSubmitError(null)}>Try again</button>
+          <button onClick={() => { setSubmitError(null); setOperation(null); setResult(null); refresh(); }}>Return to map</button>
+        </section>
+      </main>
+    );
+  }
   if (result) {
     return <main className={`${styles.resultPage} ${result.ok ? styles.resultSuccess : styles.resultFailure}`}><div className={styles.resultHalo} /><section><span>{result.ok ? "SUCCESS" : "FAILED"}</span><h1>{result.title}</h1><p>{result.message}</p>{result.correctAnswer && <small>Correct answer: {result.correctAnswer}</small>}<button onClick={() => { setResult(null); refresh(); }}>Return to map</button></section></main>;
   }

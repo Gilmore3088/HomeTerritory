@@ -53,6 +53,7 @@ Played two-window (commish@ + member@). Verdict: **decent game.** Two balance/tu
 - Run the app vs local stack: `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<anon> npm run dev`.
 - Seed accounts (local, password `playtest-password-1`): `commish@` / `member@` (group "Advance Demo League", 2 real humans — best for two-window play), plus `solo@`/`rival@` (group "Solo vs Bot" — name is historical; bots no longer exist). The old `seed-vs-bots*.mjs` scripts were deleted with the bot removal.
 - Playtest = **two browser windows** (one incognito), two real logins, drive both sides, "End turn" to pass. That is the intended mode: bots were removed 2026-08-04, so there is no solo mode.
+- Two normal windows of the same browser profile SHARE one session cookie — they cannot hold two accounts; logging in as B in window 2 silently makes window 1 account B too. Two-account testing requires the incognito window (whose session dies when it closes — closing it mid-attack leaves the defense to the 24h timeout).
 - Process: this repo uses the superpowers brainstorm → spec → plan → subagent-driven-development flow. Specs in `docs/superpowers/specs/`, plans in `docs/superpowers/plans/`, deferred items in `docs/superpowers/backlog.md`.
 
 ## Deployment (owner action — needs YOUR credentials)

@@ -2,11 +2,25 @@
 
 import { dayNumber } from "@/lib/game-format";
 import { memberColor } from "@/lib/game-constants";
-import type { GroupRow, Snapshot } from "@/lib/game-types";
+import type { GameLoadError, GroupRow, Snapshot } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
 
 export function Loading({ label }: { label: string }) {
   return <main className={styles.loading}><div className={styles.loadingOrb} /><span>{label}</span></main>;
+}
+
+export function LoadErrorScreen({ error, onRetry }: { error: GameLoadError; onRetry: () => void }) {
+  const heading = error.source === "groups" ? "Couldn't load your leagues" : "Couldn't sync the map";
+  return (
+    <main className={styles.loading}>
+      <section className={styles.loadErrorCard}>
+        <span className={styles.kicker}>CONNECTION TROUBLE</span>
+        <h1>{heading}</h1>
+        <p>{error.message}</p>
+        <button className={styles.primaryButton} onClick={onRetry}>Retry</button>
+      </section>
+    </main>
+  );
 }
 
 export function StandingsOverlay({ snapshot }: { snapshot: Snapshot }) {

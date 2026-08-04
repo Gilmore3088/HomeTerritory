@@ -9,16 +9,19 @@ This repository is not a static mockup. The application uses shared Supabase sta
 - Email/password signup and sign-in through Supabase Auth
 - Create a private group and select sports and season length
 - Join a group with an eight-character invite code
-- Three-player minimum and commissioner-controlled season start
-- Interactive, zoomable 50-state map
+- Two-player minimum and commissioner-controlled season start
+- Interactive 50-state map
 - Neutral claims, adjacency-restricted attacks, hold levels, fortification, and 24-hour defenses
 - Tiered questions, multi-answer attack streaks, timers, action consumption, cooldowns, and underdog discounts
-- Server-side answer checking; correct answers are not sent to the browser
+- Server-side answer checking; the browser never sees an answer before it is
+  submitted, and `game_submit_answer` returns `correct_answer` only in its
+  reply to an attempt that has already been graded
 - One active attack per state and automatic timeout resolution
-- Shared cumulative scoring, region bonuses, leaderboard, and activity feed
+- Shared cumulative scoring with region, coast-to-coast and sport-diversity
+  bonuses, leaderboard, and activity feed
 - Supabase Realtime subscriptions so multiple phones update from the same database
-- One-tap question quarantine and action refund
-- Installable PWA shell
+- One-tap question reporting with an immediate action refund; a question is
+  quarantined once three separate players report it
 - Vercel Cron endpoint for scoring and expired-session cleanup
 
 ## Architecture
@@ -84,7 +87,13 @@ npm run dev
 
 Then open `http://localhost:3000`.
 
-To test the real multiplayer flow, create three accounts using three email addresses, join the same invite code, and start the season from the commissioner account.
+Point `.env.local` at the hosted project, or run the whole stack on your own
+machine — Postgres, Auth, Storage and the edge functions — with the Supabase
+CLI. `docs/superpowers/local-stack.md` has the ports this repository uses, the
+`supabase start` flags Colima needs, and the environment variables the database
+test suite reads.
+
+To test the real multiplayer flow, create two accounts using two email addresses, join the same invite code, and start the season from the commissioner account.
 
 ## Deploy to Vercel
 
@@ -95,7 +104,10 @@ To test the real multiplayer flow, create three accounts using three email addre
 5. Update `NEXT_PUBLIC_SITE_URL` to the Vercel production domain.
 6. In Supabase **Authentication → URL Configuration**, set the production site URL and add the Vercel authentication callback URLs.
 
-`vercel.json` runs the daily tick at 08:05 UTC. The MVP uses one UTC scoring tick; per-group local-midnight scoring is a later refinement.
+`vercel.json` runs the daily tick at 08:05 UTC. Each league's day boundary
+comes from its own `groups.timezone`, so the tick scores whichever leagues
+have crossed local midnight by then; nothing writes that column yet, so every
+league currently uses its `America/Los_Angeles` default.
 
 ## Starter question bank
 
@@ -114,8 +126,10 @@ The migration creates 550 starter questions—11 per state—so claims, attacks,
 
 - No web-push notifications yet; the in-app defense alert and realtime update are implemented first.
 - No AI generation worker or external sports-reference validation worker yet.
-- No coast-to-coast or sport-diversity bonus yet.
-- Daily scoring is UTC rather than group-local time.
+- No installable PWA yet: `public/sw.js` and `public/manifest.webmanifest` ship
+  but nothing registers them.
+- Leagues cannot choose a timezone yet, so every one of them scores on the
+  `America/Los_Angeles` default.
 - The starter bank uses repeated factual subjects in different question forms to guarantee enough test inventory.
 
 ## Verification
@@ -124,6 +138,11 @@ The migration creates 550 starter questions—11 per state—so claims, attacks,
 npm test
 npm run typecheck
 npm run build
+npm run lint
 ```
 
-The GitHub Actions CI workflow runs all three checks on pull requests.
+The GitHub Actions CI workflow runs the first three on pull requests.
+
+`npm run test:db` drives the real engine functions and needs a running local
+stack plus `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` and
+`SUPABASE_TEST_SERVICE_KEY`; see `docs/superpowers/local-stack.md`.

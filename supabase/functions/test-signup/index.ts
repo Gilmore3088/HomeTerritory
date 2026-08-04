@@ -45,35 +45,29 @@ Deno.serve(async (request: Request) => {
     if (groupError) return respond({ error: groupError.message }, 500);
     if (!group) return respond({ error: "That code is not an active playtest invite." }, 403);
 
-    const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (listError) return respond({ error: listError.message }, 500);
+    // An invite code proves the holder may join *this league*. It proves nothing
+    // about who owns a given email address, so signup never touches an account
+    // that already exists: the old "recover an unconfirmed account" branch reset
+    // the password of any address an invite holder cared to type. Letting
+    // createUser reject the duplicate also removes the paged listUsers scan,
+    // which only ever saw the first 1000 accounts.
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { display_name: displayName },
+    });
 
-    const existing = listed.users.find((candidate) => candidate.email?.toLowerCase() === email) ?? null;
-    let user = existing;
-
-    if (user) {
-      if (user.email_confirmed_at) {
-        return respond({ error: "An account with that email already exists. Sign in instead." }, 409);
-      }
-
-      const { data: recovered, error: recoverError } = await admin.auth.admin.updateUserById(user.id, {
-        password,
-        email_confirm: true,
-        user_metadata: { ...user.user_metadata, display_name: displayName },
-      });
-      if (recoverError) return respond({ error: recoverError.message }, 400);
-      user = recovered.user;
-    } else {
-      const { data: created, error: createError } = await admin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { display_name: displayName },
-      });
-      if (createError) return respond({ error: createError.message }, 400);
-      user = created.user;
+    if (createError) {
+      const alreadyRegistered = createError.status === 422
+        || /already (been )?registered|already exists|duplicate/i.test(createError.message);
+      return respond(
+        { error: alreadyRegistered ? "An account with that email already exists. Sign in instead." : createError.message },
+        alreadyRegistered ? 409 : 400,
+      );
     }
 
+    const user = created.user;
     if (!user) return respond({ error: "Account creation did not return a user." }, 500);
 
     const { error: profileError } = await admin
@@ -177,7 +171,6 @@ Deno.serve(async (request: Request) => {
 
     return respond({
       ok: true,
-      recovered: Boolean(existing),
       league: group.name,
       homeState,
       message: homeState

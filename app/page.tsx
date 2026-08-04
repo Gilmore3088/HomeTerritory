@@ -1,10 +1,10 @@
 import GameRuntimeControls from "@/components/game-runtime-controls";
-import TerritoryGameV2 from "@/components/territory-game-v2";
+import TerritoryGame from "@/components/territory-game";
 
 export default function HomePage() {
   return (
     <>
-      <TerritoryGameV2 />
+      <TerritoryGame />
       <GameRuntimeControls />
     </>
   );

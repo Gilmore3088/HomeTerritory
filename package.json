@@ -9,7 +9,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "stack:start": "supabase start",
+    "stack:reset": "supabase db reset",
+    "stack:stop": "supabase stop",
+    "test:db": "node --experimental-strip-types --test tests/db/*.test.ts",
+    "test:smoke": "node --experimental-strip-types --test tests/smoke/*.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

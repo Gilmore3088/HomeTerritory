@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   canAttackTerritory,
+  isTerritoryActionBlocked,
   normalizeAnswer,
   refreshedActions,
   requiredCorrectForSteal,
@@ -44,4 +45,61 @@ test("adjacency is required after a player owns territory", () => {
 test("actions replenish by three per elapsed day with a cap of five", () => {
   assert.equal(refreshedActions({ currentActions: 0, elapsedDays: 1 }), 3);
   assert.equal(refreshedActions({ currentActions: 4, elapsedDays: 2 }), 5);
+});
+
+test("refreshedActions ignores negative elapsed days and respects the cap", () => {
+  assert.equal(refreshedActions({ currentActions: 2, elapsedDays: -3 }), 2);
+  assert.equal(refreshedActions({ currentActions: 5, elapsedDays: 0 }), 5);
+  assert.equal(refreshedActions({ currentActions: 0, elapsedDays: 100 }), 5);
+});
+
+test("normalizeAnswer flattens whitespace runs and strips symbols", () => {
+  assert.equal(normalizeAnswer("  L.A.\tLakers \n"), "l a lakers");
+  assert.equal(normalizeAnswer("49ers!"), "49ers");
+  assert.equal(normalizeAnswer(""), "");
+});
+
+test("canAttackTerritory treats missing adjacency entries as no border", () => {
+  assert.equal(
+    canAttackTerritory({ targetId: "HI", ownedTerritoryIds: ["CA"], adjacencyByTerritory: {} }),
+    false,
+  );
+});
+
+// Finding 4: fortify spends one of the day's moves (game_begin_action charges it
+// alongside claim and attack), but the sheet only disabled the button for claim
+// and attack, so the fortify button stayed enabled at zero moves and threw.
+test("fortify is blocked at zero moves, like claim and attack", () => {
+  const own = { contested: false, sharesBorder: false, actionsRemaining: 0 };
+  assert.equal(isTerritoryActionBlocked({ kind: "fortify", ...own }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "claim", ...own, sharesBorder: true }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "attack", ...own, sharesBorder: true }), true);
+});
+
+// A player's own state is not necessarily adjacent to another of their states,
+// so the border rule must not be applied to fortify.
+test("fortify does not require a shared border, but claim and attack do", () => {
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "fortify", contested: false, sharesBorder: false, actionsRemaining: 1 }),
+    false,
+  );
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "claim", contested: false, sharesBorder: false, actionsRemaining: 3 }),
+    true,
+  );
+});
+
+test("a contested state blocks every action, and defense never spends a move", () => {
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "defend", contested: true, sharesBorder: false, actionsRemaining: 3 }),
+    true,
+  );
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "defend", contested: false, sharesBorder: false, actionsRemaining: 0 }),
+    false,
+  );
+  assert.equal(
+    isTerritoryActionBlocked({ kind: "home", contested: false, sharesBorder: false, actionsRemaining: 0 }),
+    false,
+  );
 });

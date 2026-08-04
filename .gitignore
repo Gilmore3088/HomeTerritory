@@ -6,3 +6,10 @@ node_modules
 coverage
 *.log
 .DS_Store
+
+# Generated / local artifacts
+AGENTS.md
+CLAUDE.md
+tsconfig.tsbuildinfo
+package-lock.json
+.superpowers/

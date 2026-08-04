@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient, type Session } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+import { useSupabaseSession } from "@/hooks/use-supabase-session";
+import { pickActiveGroup } from "@/lib/game-selection";
 import styles from "./game-runtime-controls.module.css";
 
-const SUPABASE_URL = "https://gduvdnpxgdniogmxxlmg.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Xgxcnh4NUlZ7dkYHeC-xiw_mOmxQxGZ";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-});
+const supabase = createClient();
 
 type GroupRow = {
   id: string;
@@ -45,16 +43,23 @@ type RuntimeState = {
 };
 
 export default function GameRuntimeControls() {
-  const [session, setSession] = useState<Session | null>(null);
+  const { session } = useSupabaseSession();
   const [state, setState] = useState<RuntimeState | null>(null);
   const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(Boolean(session));
+
+  // Dropping the previous player's runtime state belongs to the sign-out
+  // transition itself, not to an effect: React re-renders with the cleared
+  // state before anything paints, so a sign-in on the same page never shows
+  // the previous account's turn banner.
+  if (Boolean(session) !== signedIn) {
+    setSignedIn(Boolean(session));
+    if (!session) setState(null);
+  }
 
   const load = useCallback(async (activeSession: Session | null) => {
-    if (!activeSession) {
-      setState(null);
-      return;
-    }
+    if (!activeSession) return;
 
     const { data: groupData, error: groupError } = await supabase.rpc("get_my_groups");
     if (groupError) {
@@ -64,9 +69,8 @@ export default function GameRuntimeControls() {
 
     const groups = (groupData ?? []) as GroupRow[];
     const saved = window.localStorage.getItem("territory_group");
-    const group = groups.find((row) => row.id === saved)
-      ?? groups.find((row) => row.status === "active")
-      ?? groups[0];
+    const groupId = pickActiveGroup(groups, saved);
+    const group = groups.find((row) => row.id === groupId);
 
     if (!group) {
       setState(null);
@@ -103,28 +107,9 @@ export default function GameRuntimeControls() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      void load(data.session);
-    });
-
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!mounted) return;
-      setSession(nextSession);
-      void load(nextSession);
-    });
-
-    return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
-    };
-  }, [load]);
-
-  useEffect(() => {
     if (!session) return;
     const refresh = () => void load(session);
+    refresh();
     const interval = window.setInterval(refresh, 5_000);
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
@@ -174,7 +159,7 @@ export default function GameRuntimeControls() {
     if (reason === null) return;
 
     setBusy("report");
-    const { error } = await supabase.rpc("report_question", {
+    const { data, error } = await supabase.rpc("report_question", {
       p_attempt_id: state.activeAttemptId,
       p_reason: reason.trim() || "Player reported a possible question problem",
     });
@@ -185,7 +170,9 @@ export default function GameRuntimeControls() {
       return;
     }
 
-    window.alert("Question quarantined and your move was refunded.");
+    // A question is only quarantined once three separate players report it, so
+    // report_question is the one that knows which outcome the player just got.
+    window.alert((data as { message?: string } | null)?.message ?? "Report filed and your move was refunded.");
     window.location.reload();
   }
 

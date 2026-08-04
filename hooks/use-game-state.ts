@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { ActiveOperation, GroupRow, ResultState, Snapshot, ToastState } from "@/lib/game-types";
+import { pickActiveGroup } from "@/lib/game-selection";
 
 const supabase = createClient();
 
@@ -62,7 +63,7 @@ export function useGameState(session: Session | null): GameState {
     const rows = (data ?? []) as GroupRow[];
     setGroups(rows);
     const saved = window.localStorage.getItem("territory_group");
-    const next = preferred ?? saved ?? rows.find((row) => row.status === "active")?.id ?? rows[0]?.id ?? null;
+    const next = pickActiveGroup(rows, saved, preferred);
     setGroupId(next);
     if (next) window.localStorage.setItem("territory_group", next);
   }, [notify]);

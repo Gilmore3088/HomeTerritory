@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseSession } from "@/hooks/use-supabase-session";
+import { pickActiveGroup } from "@/lib/game-selection";
 import styles from "./game-runtime-controls.module.css";
 
 const supabase = createClient();
@@ -68,9 +69,8 @@ export default function GameRuntimeControls() {
 
     const groups = (groupData ?? []) as GroupRow[];
     const saved = window.localStorage.getItem("territory_group");
-    const group = groups.find((row) => row.id === saved)
-      ?? groups.find((row) => row.status === "active")
-      ?? groups[0];
+    const groupId = pickActiveGroup(groups, saved);
+    const group = groups.find((row) => row.id === groupId);
 
     if (!group) {
       setState(null);

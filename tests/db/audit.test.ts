@@ -684,6 +684,60 @@ test("the served tier is the adaptive tier that selection and the timer both use
   }
 });
 
+// Finding 20: with the pool exhausted for the player, the fallback ignored both
+// the 7-day exclusion and the session tier, so it could re-serve the question the
+// player had just answered -- inside the same attack streak, making the rest of
+// the run free.
+test("an exhausted question pool does not re-serve the same question inside one streak", async () => {
+  const { players, seasonId } = await startSeason([["Rex", "MT"], ["Sky", "WY"]]);
+
+  const bank = await admin
+    .from("questions").select("id,attempt_count").eq("territory_id", "WY").eq("active", true).order("id");
+  assert.equal(bank.error, null);
+  const rows = (bank.data ?? []) as Array<{ id: string; attempt_count: number }>;
+  const [first, second, ...rest] = rows;
+  const parkedIds = rest.map((row) => row.id);
+
+  try {
+    if (parkedIds.length) await admin.from("questions").update({ active: false }).in("id", parkedIds);
+    // The old fallback ordered by attempt_count, so the cheapest row would come
+    // back a second time. Make that preference unambiguous rather than 50/50.
+    await admin.from("questions").update({ attempt_count: 0 }).eq("id", first.id);
+    await admin.from("questions").update({ attempt_count: 9999 }).eq("id", second.id);
+
+    // Mark both as already served to this player, which is what pushes selection
+    // past the 7-day branch and into the fallback on the very first question.
+    const seen = await admin.from("season_question_seen").insert([
+      { season_id: seasonId, question_id: first.id, served_to: players.Rex.id },
+      { season_id: seasonId, question_id: second.id, served_to: players.Rex.id },
+    ]);
+    assert.equal(seen.error, null);
+
+    // WY is Sky's, borders MT, and sits at hold_level 1, so the attack costs two
+    // correct answers -- one streak, two questions from a two-question pool.
+    const session = await begin(players.Rex.client, seasonId, "WY", "attack");
+    assert.equal(session.required_correct, 2);
+    const openingAnswer = await correctAnswerFor(session.session_id);
+    const submitted = await players.Rex.client.rpc("game_submit_answer", {
+      p_session_id: session.session_id,
+      p_answer: openingAnswer,
+    });
+    assert.equal(submitted.error, null);
+
+    const { data: attempts } = await admin
+      .from("question_attempts").select("question_id").eq("session_id", session.session_id).order("served_at");
+    const served = (attempts ?? []).map((row) => (row as { question_id: string }).question_id);
+    assert.equal(served.length, 2, "one correct answer in a two-answer streak should serve a second question");
+    assert.equal(served[0], first.id, "the fallback should open with the least-used question");
+    assert.notEqual(served[1], served[0], "a streak must not be handed back the answer it just gave");
+  } finally {
+    await admin.from("season_question_seen").delete().eq("season_id", seasonId);
+    await admin.from("questions").update({ attempt_count: first.attempt_count }).eq("id", first.id);
+    await admin.from("questions").update({ attempt_count: second.attempt_count }).eq("id", second.id);
+    if (parkedIds.length) await admin.from("questions").update({ active: true }).in("id", parkedIds);
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Resume-after-refresh (Step 3, exercised through the RPC the UI calls)
 // ---------------------------------------------------------------------------

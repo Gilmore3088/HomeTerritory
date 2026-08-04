@@ -25,6 +25,23 @@ suite now back the codebase:
 
 `npm run typecheck`, `npm run build`, and `npm run lint` all pass clean.
 
+## Phase 2a (Foundation): complete
+
+The data layer is unified: `TerritoryGame` and `GameRuntimeControls` no longer
+run two independent `group_snapshot` poll loops against the same
+`territory_group` localStorage key — a single `GameDataProvider` drives one
+poll loop that both consume, so the turn banner and the map always agree on
+the selected league. The stale-operation bug is fixed: `loadSnapshot` now
+clears a resolved session instead of leaving a stale question card behind
+after a poll. A commissioner-gated `advance_group_day` RPC and its UI control
+let the commissioner advance the current local day on demand rather than
+waiting on the wall clock. See
+`docs/superpowers/specs/2026-08-04-p2a-foundation-design.md` and
+`docs/superpowers/plans/2026-08-04-p2a-foundation.md` for the design and task
+breakdown.
+
+Phase 2b (Broadcast restyle) is next.
+
 ## Production deployment: pending owner action
 
 The pre-Phase-1 schema and game engine (10 migrations, `202607300001` through
@@ -39,3 +56,10 @@ push, env wiring, auth URL configuration, cron, PWA installability) is Phase 5
 of the roadmap in `docs/superpowers/specs/2026-08-03-stabilize-phase-design.md`
 and follows Phases 2–4 (mobile UX/visual polish, trivia engine, strategy
 depth), not Phase 1.
+
+Phase 2a added two more migrations (`20260803233000_extract_advance_season.sql`
+and `20260804000000_commissioner_advance_group_day.sql`), also tested clean
+against the local stack. They are not yet deployed either, and await the same
+owner action as Phase 1's outstanding twelve: the `SUPABASE_ACCESS_TOKEN` /
+`SUPABASE_DB_PASSWORD` GitHub Actions secrets configured and the
+`.github/workflows/deploy-supabase.yml` deploy workflow run.

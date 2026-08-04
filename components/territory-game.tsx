@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useSupabaseSession } from "@/hooks/use-supabase-session";
-import { useGameState } from "@/hooks/use-game-state";
+import { useGameData } from "@/hooks/game-data-context";
 import type { View } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
 import AuthStage from "./auth-stage";
@@ -16,8 +15,9 @@ import { LeaguePicker, Loading } from "./game-overlays";
 const supabase = createClient();
 
 export default function TerritoryGame() {
-  const { session, authReady } = useSupabaseSession();
   const {
+    session,
+    authReady,
     groups,
     groupId,
     setGroupId,
@@ -33,7 +33,7 @@ export default function TerritoryGame() {
     loadGroups,
     loadSnapshot,
     beginAction,
-  } = useGameState(session);
+  } = useGameData();
   const [view, setView] = useState<View>("map");
   const [selected, setSelected] = useState<string | null>(null);
   const [front, setFront] = useState<string | null>(null);

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { ActiveOperation, GroupRow, ResultState, Snapshot, ToastState } from "@/lib/game-types";
 import { pickActiveGroup } from "@/lib/game-selection";
+import { shouldClearOperation } from "@/lib/turn-reconcile";
 
 const supabase = createClient();
 
@@ -24,6 +25,7 @@ export interface GameState {
   loadGroups: (preferred?: string | null) => Promise<void>;
   loadSnapshot: (target?: string | null) => Promise<void>;
   beginAction: (kind: string, state: string, attackId?: string) => Promise<void>;
+  advanceGroupDay: () => Promise<void>;
 }
 
 export function useGameState(session: Session | null): GameState {
@@ -35,6 +37,7 @@ export function useGameState(session: Session | null): GameState {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [signedIn, setSignedIn] = useState(Boolean(session));
+  const beganAtRef = useRef<number | null>(null);
 
   // Dropping the signed-out player's board belongs to the sign-out transition
   // itself rather than to an effect: React re-renders with the cleared state
@@ -74,6 +77,7 @@ export function useGameState(session: Session | null): GameState {
       setSnapshot(null);
       return;
     }
+    const loadStartedAtMs = Date.now();
     const [snapshotResponse, operationResponse] = await Promise.all([
       supabase.rpc("group_snapshot", { p_group_id: id }),
       supabase.rpc("get_my_active_session", { p_group_id: id }),
@@ -83,7 +87,15 @@ export function useGameState(session: Session | null): GameState {
       return;
     }
     setSnapshot(snapshotResponse.data as Snapshot);
-    if (operationResponse.data) setOperation(operationResponse.data as ActiveOperation);
+    if (operationResponse.data) {
+      setOperation(operationResponse.data as ActiveOperation);
+    } else if (shouldClearOperation({
+      serverHasSession: false,
+      beganAtMs: beganAtRef.current,
+      loadStartedAtMs,
+    })) {
+      setOperation(null);
+    }
   }, [groupId, notify]);
 
   // Both loaders write state only once their RPC has resolved, so each read is
@@ -136,7 +148,20 @@ export function useGameState(session: Session | null): GameState {
       notify(error.message, true);
       return;
     }
+    beganAtRef.current = Date.now();
     setOperation(data as ActiveOperation);
+  }
+
+  async function advanceGroupDay() {
+    if (!snapshot) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("advance_group_day", { p_group_id: snapshot.group.id });
+    setBusy(false);
+    if (error) notify(error.message, true);
+    else {
+      notify("The day advanced.");
+      loadSnapshot();
+    }
   }
 
   return {
@@ -155,5 +180,6 @@ export function useGameState(session: Session | null): GameState {
     loadGroups,
     loadSnapshot,
     beginAction,
+    advanceGroupDay,
   };
 }

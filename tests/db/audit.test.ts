@@ -699,14 +699,63 @@ test("a second attacker on the same state fails cleanly instead of raising a con
   assert.equal(after.actions_remaining, 3, "a move that bought nothing is returned");
 });
 
-// Finding 6: run_test_bot_turns is SECURITY DEFINER, performs no membership or
-// commissioner check, and its `revoke all ... from public` never removed the
-// grants Supabase hands to anon/authenticated, so an unauthenticated client can
-// drive a league's bots. Un-skip once the function verifies its caller.
-test("run_test_bot_turns rejects a caller who is not the commissioner", { skip: "Finding 6" }, async () => {
+// Finding 6: run_test_bot_turns is SECURITY DEFINER and performs no caller check
+// at all, and its `revoke all ... from public` never removed the grants Supabase
+// hands to anon/authenticated. It is an internal helper driven by run_daily_tick
+// and called by no client, so revoking EXECUTE is the whole fix.
+test("run_test_bot_turns is not reachable by any client role", async () => {
   const { players, seasonId } = await startSeason([["Uli", "WA"], ["Vera", "FL"]], { testMode: true });
+
   const asMember = await players.Vera.client.rpc("run_test_bot_turns", { p_season_id: seasonId });
-  assert.ok(asMember.error, "a non-commissioner member must not be able to drive bot turns");
+  assert.ok(asMember.error, "a signed-in member must not be able to drive bot turns");
+
+  const asCommissioner = await players.Uli.client.rpc("run_test_bot_turns", { p_season_id: seasonId });
+  assert.ok(asCommissioner.error, "not even the commissioner reaches the internal helper directly");
+});
+
+// Findings 6 and 7 share one root cause: Supabase's default privileges grant
+// EXECUTE on every new function to anon and authenticated, so
+// `revoke all ... from public` removes nothing. This probe is the permanent
+// guard -- it enumerates every security-definer function in `public` and fails
+// the moment a new migration leaves one anon-executable.
+test("no security-definer function in public is executable by anon", async () => {
+  // Nothing in the product is called before sign-in: the browser client is
+  // `authenticated`, and the playtest signup path runs in an edge function under
+  // the service key. The allowlist is therefore deliberately empty.
+  const ANON_ALLOWLIST: string[] = [];
+
+  const { data, error } = await admin.rpc("security_definer_grants");
+  assert.equal(error, null, "security_definer_grants should be readable by the service key");
+  const rows = data as Array<{ function: string; anon_execute: boolean; authenticated_execute: boolean }>;
+  assert.ok(rows.length >= 20, `expected the engine's functions to be enumerated, saw ${rows.length}`);
+
+  const reachable = rows.filter((row) => row.anon_execute && !ANON_ALLOWLIST.includes(row.function));
+  assert.deepEqual(reachable.map((row) => row.function), [], "these functions are reachable unauthenticated");
+});
+
+// The same trap, one role up: these are internal helpers that a signed-in player
+// must never call directly, whatever the default privileges hand out.
+test("engine internals are not executable by authenticated players", async () => {
+  const INTERNAL = [
+    "handle_new_user()",
+    "pick_next_question(p_session_id uuid)",
+    "refresh_player_actions(p_season_id uuid, p_user_id uuid)",
+    "resolve_attack_win(p_attack_id uuid, p_reason text)",
+    "resolve_expired_attacks(p_season_id uuid)",
+    "resolve_expired_sessions(p_season_id uuid)",
+    "run_daily_tick()",
+    "run_test_bot_turns(p_season_id uuid)",
+  ];
+
+  const { data, error } = await admin.rpc("security_definer_grants");
+  assert.equal(error, null);
+  const rows = data as Array<{ function: string; authenticated_execute: boolean }>;
+  const byName = new Map(rows.map((row) => [row.function, row.authenticated_execute]));
+
+  for (const name of INTERNAL) {
+    assert.equal(byName.has(name), true, `${name} should still exist in the schema`);
+    assert.equal(byName.get(name), false, `${name} must not be callable by a signed-in player`);
+  }
 });
 
 // Finding 11: seasons.last_scored_on, player_actions.last_refresh_on and

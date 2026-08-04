@@ -1013,9 +1013,12 @@ test("every day-boundary column is stamped in the group's local day, not UTC", a
 });
 
 // ---------------------------------------------------------------------------
-// Realtime: the tables the client subscribes to must be in the publication
+// Realtime: the channel filter is `season_id=eq.<id>`, so every subscribed table
+// has to carry that column. Publication membership itself is verified out of
+// band (`pg_publication_tables` is not reachable through PostgREST) and recorded
+// in the findings doc under "Realtime".
 // ---------------------------------------------------------------------------
-test("every table the map subscribes to is published to supabase_realtime", async () => {
+test("every table the map subscribes to carries the season_id the channel filters on", async () => {
   // territory-game-v2.tsx subscribes to these four tables filtered by season_id.
   const subscribed = ["season_territories", "attacks", "activity_events", "player_actions"];
   const { data, error } = await admin

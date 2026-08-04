@@ -1,9 +1,10 @@
 // Phase 1 audit probes. One test per mechanic on the audit checklist; every
 // deviation from expected behavior is written up in docs/superpowers/audit-findings.md.
 //
-// Probes that document a real bug assert the *correct* behavior and are skipped
-// with a comment naming the finding number, so `npm run test:db` stays green
-// until Task 8 fixes the bug and un-skips them.
+// Task 7 left six of these skipped, each pinned to the finding it was blocked
+// on. Task 8 fixed all six, so nothing here is skipped any more: a probe that
+// names a finding number is now asserting the *fixed* behavior and is the
+// regression guard for it.
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -808,7 +809,11 @@ test("resuming a question serves a stable option order that does not leak the an
     .single();
   assert.equal(bank.error, null);
   const subject = bank.data as { id: string; options: string[]; correct_answer: string };
-  const options = [subject.correct_answer, ...Array.from({ length: 7 }, (_, index) => `Audit decoy ${index}`)];
+  const OPTION_COUNT = 12;
+  const options = [
+    subject.correct_answer,
+    ...Array.from({ length: OPTION_COUNT - 1 }, (_, index) => `Audit decoy ${index}`),
+  ];
 
   const parked = await admin
     .from("questions")
@@ -821,7 +826,15 @@ test("resuming a question serves a stable option order that does not leak the an
   assert.equal(widened.error, null);
 
   try {
-    const ROUNDS = 10;
+    // Bound chosen against Binomial(20, 1/12) -- 20 rounds of a 12-option
+    // question, correct answer uniformly placed. Mean 1.67; P(answerFirst >= 9)
+    // is 1.4e-5, so a healthy shuffle fails this roughly once in 72,000 runs.
+    // It still catches a *partial* leak, which the old `answerFirst < ROUNDS`
+    // did not: an implementation that pins the answer first 90% of the time
+    // fails with probability > 0.99999, 70% of the time with probability 0.995,
+    // and half the time with probability 0.75.
+    const ROUNDS = 20;
+    const MAX_ANSWER_FIRST = 8;
     let answerFirst = 0;
     for (let round = 0; round < ROUNDS; round += 1) {
       await admin
@@ -851,7 +864,11 @@ test("resuming a question serves a stable option order that does not leak the an
 
       await admin.from("game_sessions").update({ status: "void" }).eq("id", session.session_id);
     }
-    assert.ok(answerFirst < ROUNDS, "the correct answer must not be pinned to the first option");
+    assert.ok(
+      answerFirst <= MAX_ANSWER_FIRST,
+      `the correct answer landed first ${answerFirst}/${ROUNDS} times; a fair shuffle over ` +
+        `${OPTION_COUNT} options should average ${(ROUNDS / OPTION_COUNT).toFixed(1)}`,
+    );
   } finally {
     await admin.from("questions").update({ options: subject.options }).eq("id", subject.id);
     const ids = (parked.data ?? []).map((row) => (row as { id: string }).id);
@@ -941,6 +958,12 @@ test("run_test_bot_turns is not reachable by any client role", async () => {
 // guard -- it enumerates every security-definer function in `public` and fails
 // the moment a new migration leaves one anon-executable.
 test("no security-definer function in public is executable by anon", async () => {
+  // Scope: security-definer functions only. Extension helpers installed into
+  // `public` -- levenshtein, soundex, unaccent, the fuzzystrmatch family -- are
+  // SECURITY INVOKER, so they run with the caller's own privileges and are
+  // deliberately out of scope; `security_definer_grants()` filters on
+  // `pg_proc.prosecdef` for exactly that reason.
+  //
   // Nothing in the product is called before sign-in: the browser client is
   // `authenticated`, and the playtest signup path runs in an edge function under
   // the service key. The allowlist is therefore deliberately empty.

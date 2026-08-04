@@ -23,8 +23,7 @@ export default function LobbyStage({ snapshot, groups, groupId, setGroupId, refr
   const [homeState, setHomeState] = useState(me?.home_state ?? "");
   const [busy, setBusy] = useState(false);
   const used = new Set(snapshot.members.map((member) => member.home_state).filter(Boolean) as string[]);
-  const humans = snapshot.members.filter((member) => !member.is_bot);
-  const homesReady = humans.every((member) => member.home_state);
+  const homesReady = snapshot.members.every((member) => member.home_state);
 
   async function saveHome() {
     setBusy(true);
@@ -65,8 +64,8 @@ export default function LobbyStage({ snapshot, groups, groupId, setGroupId, refr
             <select value={homeState} onChange={(event) => setHomeState(event.target.value)}><option value="">Choose state</option>{ALL_STATES.map((code) => <option key={code} value={code} disabled={used.has(code) && me?.home_state !== code}>{STATE_NAMES[code]}</option>)}</select>
             <button className={styles.primaryButton} disabled={!homeState || busy} onClick={saveHome}>{me?.home_state ? "Update home state" : "Lock home state"}</button>
           </div>
-          <div className={styles.playerRail}>{snapshot.members.map((member) => <div key={member.user_id} className={styles.playerAvatar}><span style={{ background: memberColor(member) }}>{member.display_name.slice(0, 1).toUpperCase()}</span><strong>{member.display_name}</strong><small>{member.is_bot ? "Bot" : member.home_state ?? "Choosing"}</small></div>)}</div>
-          {commissioner && <button className={styles.startButton} disabled={busy || humans.length < 2 || !homesReady} onClick={start}>{!homesReady ? "Waiting for home states" : humans.length < 2 ? "Two people required" : "Start the season"}</button>}
+          <div className={styles.playerRail}>{snapshot.members.map((member) => <div key={member.user_id} className={styles.playerAvatar}><span style={{ background: memberColor(member) }}>{member.display_name.slice(0, 1).toUpperCase()}</span><strong>{member.display_name}</strong><small>{member.home_state ?? "Choosing"}</small></div>)}</div>
+          {commissioner && <button className={styles.startButton} disabled={busy || snapshot.members.length < 2 || !homesReady} onClick={start}>{!homesReady ? "Waiting for home states" : snapshot.members.length < 2 ? "Two people required" : "Start the season"}</button>}
           <button className={styles.textButton} onClick={() => supabase.auth.signOut()}>Sign out</button>
         </div>
       </section>

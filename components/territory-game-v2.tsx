@@ -14,6 +14,18 @@ import { dayNumber, edgeErrorMessage, timeLeft } from "@/lib/game-format";
 import { isTerritoryActionBlocked } from "@/lib/game-rules";
 import mapData from "@/data/us-states";
 import adjacencyData from "@/data/adjacency.json";
+import type {
+  ActiveOperation,
+  Attack,
+  GroupRow,
+  Member,
+  ResultState,
+  ScoreRow,
+  Snapshot,
+  Territory,
+  ToastState,
+  View,
+} from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
 
 const supabase = createClient();
@@ -52,106 +64,6 @@ const MAP_LABELS = ALL_STATES.filter((code) => !["CT", "DE", "MA", "MD", "NH", "
 const LEADERS: Record<string, number> = { VT: 132, NH: 158, MA: 184, RI: 210, CT: 236, NJ: 262, DE: 288, MD: 314, WV: 340 };
 const SPORTS = ["NFL", "CFB", "MLB", "NBA", "CBB", "NHL", "OTH"];
 
-interface GroupRow {
-  id: string;
-  name: string;
-  status: "lobby" | "active" | "ended";
-  invite_code: string;
-  sports: string[];
-  member_count: number;
-  is_commissioner: boolean;
-}
-interface Member {
-  user_id: string;
-  display_name: string;
-  color_index: number;
-  home_state?: string | null;
-  home_completed?: boolean;
-  is_bot?: boolean;
-}
-interface Territory {
-  id: string;
-  name: string;
-  region: string;
-  adjacent: string[];
-  owner_id: string | null;
-  hold_level: number;
-  contested: boolean;
-}
-interface Attack {
-  id: string;
-  territory_id: string;
-  attacker_id: string;
-  defender_id: string;
-  status: string;
-  defense_deadline: string;
-  tier: number;
-}
-interface ScoreRow {
-  user_id: string;
-  display_name: string;
-  color_index: number;
-  cumulative_score: number;
-  state_count: number;
-}
-interface FeedRow {
-  id: string;
-  message: string;
-  created_at: string;
-  territory_id?: string | null;
-}
-interface Snapshot {
-  current_user_id: string;
-  group: {
-    id: string;
-    name: string;
-    commissioner_id: string;
-    invite_code: string;
-    sports: string[];
-    status: string;
-    test_mode?: boolean;
-  };
-  season: null | {
-    id: string;
-    status: string;
-    started_at: string;
-    ends_at: string;
-    current_day?: number;
-  };
-  members: Member[];
-  territories: Territory[];
-  attacks: Attack[];
-  scores: ScoreRow[];
-  activity: FeedRow[];
-  actions_remaining: number;
-}
-interface Question {
-  attempt_id: string;
-  text: string;
-  format: "multiple_choice" | "free_fill";
-  options: string[];
-  tier: number;
-  sport: string;
-  link_type: string;
-  expires_at: string;
-}
-interface ActiveOperation {
-  session_id: string;
-  action_type: string;
-  territory_id: string;
-  required_correct: number;
-  correct_count: number;
-  question: Question;
-}
-interface ResultState {
-  ok: boolean;
-  title: string;
-  message: string;
-  correctAnswer?: string | null;
-}
-interface ToastState { text: string; error?: boolean }
-
-type View = "map" | "standings" | "feed";
 
 function memberColor(member?: Pick<Member, "color_index"> | Pick<ScoreRow, "color_index"> | null) {
   return PLAYER_COLORS[member?.color_index ?? 0] ?? PLAYER_COLORS[0];

@@ -216,3 +216,19 @@ Three probes park a whole territory's question bank (findings 1, 9 and 21) and
 deliberately avoid OR, because `tests/db/engine.test.ts` runs in a parallel
 process and claims OR. The report_question probe in particular quarantines its
 subject, which would otherwise leave OR with no active questions.
+
+## Phase 1 closeout
+
+Clean-room validation run from a freshly reset local stack (`npm run
+stack:reset`), branch `fix/stabilize-mvp`, commit 503f88d. One `npm run
+test:db` flake (`AuthRetryableFetchError` from GoTrue) cleared after `docker
+restart supabase_kong_HomeTerritory`, per the documented local quirk; full
+detail in `task-11-report.md`.
+
+| Done criterion (spec) | Evidence |
+|---|---|
+| Three-account season loop runs clean end-to-end (scripted smoke test passes) | `npm run test:smoke` → `tests/smoke/mini-season.test.ts` "a three-player mini-season plays end to end", 1 pass, 0 fail. Corroborated by the controller's full manual click-through on the local stack (auth → lobby → season start → game shell → map → question with shuffled options and a live timer → submit → "Territory secured" → return to map), all passing with no app errors. |
+| Zero known blockers or bugs in the findings doc; papercuts triaged to the backlog | All 22 rows in the findings table above are `fixed (<commit>)`, `backlogged (<commit>)`, or `no fix (recommended)` (finding 17); none read `open`. Finding 22 (stale-localStorage group wedge, discovered during the controller's Task 11 click-through) is `fixed (80dc22a)`, regression-tested by `tests/game-selection.test.ts`'s `pickActiveGroup` suite (8 tests, part of the 27 in `npm test`). Backlog items are recorded in `docs/superpowers/backlog.md`, tagged by future phase. |
+| No console warnings in normal play (GoTrueClient warning and landing-page overlay issue fixed) | The triple-Supabase-client GoTrueClient warning was fixed in Task 1 (single shared client from `lib/supabase/client.ts`). The landing-page overlay issue (finding 17) was root-caused to a browser extension writing `data-scribe-recorder-ready` to `<html>` before hydration — external to the app, not reproducible in a clean profile, recommended no fix. The controller's click-through confirmed no other console warnings or errors during normal play. |
+| `territory-game-v2.tsx` no longer exists as a monolith; all files under ~300 lines | `ls components/territory-game-v2.tsx` → no such file (deleted in `116e9d0`, "replace monolith with coordinator and focused components"). Coordinator is `components/territory-game.tsx` (119 lines) plus focused files (`game-shell.tsx` 158, `game-runtime-controls.tsx` 227, `question-arena.tsx` 96, `auth-stage.tsx` 87, `lobby-stage.tsx` 75, `territory-map.tsx` 71, `league-entry.tsx` 67, `hooks/use-game-state.ts` 159, `lib/*.ts` all ≤100). `wc -l components/*.tsx hooks/*.ts lib/*.ts \| awk '$1 > 300'` prints only wc's own multi-file "total" summary line (1474, an artifact of summing all files, not a per-file violation) — no individual app source file exceeds 300 lines; the largest is `game-runtime-controls.tsx` at 227. `tests/db/audit.test.ts` (1088 lines) is a known, backlogged test-file exception (`P2-test-split` in the backlog), not app source, and is excluded from this gate by design. |
+| Test suite covers game rules and critical DB functions; `npm test`, `npm run typecheck`, and `npm run build` all pass | `npm test`: 27 pass, 0 fail. `npm run test:db`: 36 pass, 0 fail (after one Kong-restart retry for a GoTrue flake). `npm run test:smoke`: 1 pass, 0 fail. `npm run typecheck`: clean, exit 0. `npm run build`: clean, exit 0. `npm run lint`: clean, exit 0, no output (finding 16's lint-rule violations lived entirely in the now-deleted monolith and were also independently fixed in `89f13ed`). |

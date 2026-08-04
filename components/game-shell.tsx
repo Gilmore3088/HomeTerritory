@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { dayNumber, timeLeft } from "@/lib/game-format";
 import { isTerritoryActionBlocked } from "@/lib/game-rules";
+import { blockedReason } from "@/lib/ux-copy";
 import { ADJ, NEUTRAL, STATE_NAMES, memberColor } from "@/lib/game-constants";
 import type { Attack, Member, Snapshot, Territory, View } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
@@ -177,15 +178,21 @@ function TerritorySheet({ territory, owner, currentUser, homeState, action, canT
     actionsRemaining,
     isMyTurn,
   }));
-  const reason = territory.contested
-    ? "An attack is already active here."
-    : !isMyTurn
-      ? `It's ${turnHolderName ?? "another player"}'s turn. You can defend if attacked.`
-      : mine
-        ? "Fortify once per day — it spends a move — to increase the cost of stealing it."
-        : canTarget
-          ? "This state touches your border."
-          : "You do not share a border with this state.";
+  // The disabled button always explains itself; when nothing blocks, fall back
+  // to the situational hint.
+  const reason = blockedReason({
+    hasAction: Boolean(action),
+    actionsRemaining,
+    contested: territory.contested,
+    canTarget,
+    isMyTurn,
+    turnHolderName,
+    kind: action?.kind,
+  }) ?? (mine
+    ? "Fortify once per day — it spends a move — to increase the cost of stealing it."
+    : canTarget
+      ? "This state touches your border."
+      : "You do not share a border with this state.");
   return (
     <aside className={styles.territorySheet}>
       <button className={styles.sheetHandle} onClick={onClose} aria-label="Close territory details" />

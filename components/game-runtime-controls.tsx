@@ -7,10 +7,14 @@ import styles from "./game-runtime-controls.module.css";
 
 const supabase = createClient();
 
+const DEFAULT_REPORT_REASON = "The question may be inaccurate, ambiguous, duplicated, or mismatched to its difficulty.";
+
 export default function GameRuntimeControls() {
-  const { session, snapshot, operation, loadSnapshot, advanceGroupDay } = useGameData();
+  const { session, snapshot, operation, notify, loadSnapshot, advanceGroupDay } = useGameData();
   const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
 
   const isCommissioner = Boolean(snapshot && snapshot.group.commissioner_id === snapshot.current_user_id);
 
@@ -43,6 +47,13 @@ export default function GameRuntimeControls() {
     };
   }, [waiting]);
 
+  // "X is up." used to linger until the next end-turn; it clears itself now.
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), 6_000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   async function endTurn() {
     if (!state || busy || state.activeAttemptId || !state.isMyTurn) return;
     setBusy("turn");
@@ -61,29 +72,25 @@ export default function GameRuntimeControls() {
     await loadSnapshot();
   }
 
-  async function reportQuestion() {
+  async function submitReport() {
     if (!state?.activeAttemptId || busy) return;
-    const reason = window.prompt(
-      "What is wrong with this question?",
-      "The question may be inaccurate, ambiguous, duplicated, or mismatched to its difficulty.",
-    );
-    if (reason === null) return;
-
     setBusy("report");
     const { data, error } = await supabase.rpc("report_question", {
       p_attempt_id: state.activeAttemptId,
-      p_reason: reason.trim() || "Player reported a possible question problem",
+      p_reason: reportReason.trim() || "Player reported a possible question problem",
     });
     setBusy(null);
+    setReportOpen(false);
+    setReportReason("");
 
     if (error) {
-      window.alert(`Could not report question: ${error.message}`);
+      notify(`Could not report question: ${error.message}`, true);
       return;
     }
 
     // A question is only quarantined once three separate players report it, so
     // report_question is the one that knows which outcome the player just got.
-    window.alert((data as { message?: string } | null)?.message ?? "Report filed and your move was refunded.");
+    notify((data as { message?: string } | null)?.message ?? "Report filed and your move was refunded.");
     await loadSnapshot();
   }
 
@@ -114,9 +121,30 @@ export default function GameRuntimeControls() {
       )}
 
       {state?.activeAttemptId && (
-        <button type="button" className={styles.report} onClick={reportQuestion} disabled={Boolean(busy)}>
+        <button type="button" className={styles.report} onClick={() => { setReportReason(DEFAULT_REPORT_REASON); setReportOpen(true); }} disabled={Boolean(busy)}>
           {busy === "report" ? "Reporting…" : "Report question"}
         </button>
+      )}
+
+      {reportOpen && (
+        <div className={styles.reportScrim} onClick={() => setReportOpen(false)}>
+          <section className={styles.reportDialog} onClick={(event) => event.stopPropagation()}>
+            <h2>Report this question</h2>
+            <p>What is wrong with it?</p>
+            <textarea
+              value={reportReason}
+              onChange={(event) => setReportReason(event.target.value)}
+              rows={4}
+              autoFocus
+            />
+            <div className={styles.reportActions}>
+              <button type="button" onClick={() => setReportOpen(false)}>Cancel</button>
+              <button type="button" className={styles.reportSubmit} onClick={submitReport} disabled={busy === "report"}>
+                {busy === "report" ? "Reporting…" : "File report"}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
 
       {state?.testMode && !state.activeAttemptId && (

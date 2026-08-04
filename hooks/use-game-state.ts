@@ -194,6 +194,21 @@ export function useGameState(session: Session | null): GameState {
     return () => window.clearInterval(polling);
   }, [userId, groupId]);
 
+  // Refresh on tab refocus (P2b task 10); focus and visibilitychange fire
+  // together and the single-flight loader collapses the pair.
+  useEffect(() => {
+    if (!userId || !groupId) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void loadSnapshotRef.current();
+    };
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [userId, groupId]);
+
   // Realtime stays gated on the season (its filters require season_id) and is
   // bootstrapped by the first successful snapshot; the poll covers the gap.
   useEffect(() => {

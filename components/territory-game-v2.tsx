@@ -2,14 +2,15 @@
 
 import {
   FormEvent,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { useSupabaseSession } from "@/hooks/use-supabase-session";
+import { useGameState } from "@/hooks/use-game-state";
 import { dayNumber, edgeErrorMessage, timeLeft } from "@/lib/game-format";
 import { isTerritoryActionBlocked } from "@/lib/game-rules";
 import {
@@ -34,7 +35,6 @@ import type {
   ResultState,
   Snapshot,
   Territory,
-  ToastState,
   View,
 } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
@@ -42,116 +42,28 @@ import styles from "./territory-game-v2.module.css";
 const supabase = createClient();
 
 export default function TerritoryGameV2() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [authReady, setAuthReady] = useState(false);
-  const [groups, setGroups] = useState<GroupRow[]>([]);
-  const [groupId, setGroupId] = useState<string | null>(null);
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [operation, setOperation] = useState<ActiveOperation | null>(null);
-  const [result, setResult] = useState<ResultState | null>(null);
+  const { session, authReady } = useSupabaseSession();
+  const {
+    groups,
+    groupId,
+    setGroupId,
+    snapshot,
+    operation,
+    setOperation,
+    result,
+    setResult,
+    busy,
+    setBusy,
+    toast,
+    notify,
+    loadGroups,
+    loadSnapshot,
+    beginAction,
+  } = useGameState(session);
   const [view, setView] = useState<View>("map");
   const [selected, setSelected] = useState<string | null>(null);
   const [front, setFront] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState<ToastState | null>(null);
   const [leaguePicker, setLeaguePicker] = useState(false);
-
-  const notify = useCallback((text: string, error = false) => {
-    setToast({ text, error });
-    window.setTimeout(() => setToast(null), 4200);
-  }, []);
-
-  const loadGroups = useCallback(async (preferred?: string | null) => {
-    const { data, error } = await supabase.rpc("get_my_groups");
-    if (error) {
-      notify(error.message, true);
-      return;
-    }
-    const rows = (data ?? []) as GroupRow[];
-    setGroups(rows);
-    const saved = window.localStorage.getItem("territory_group");
-    const next = preferred ?? saved ?? rows.find((row) => row.status === "active")?.id ?? rows[0]?.id ?? null;
-    setGroupId(next);
-    if (next) window.localStorage.setItem("territory_group", next);
-  }, [notify]);
-
-  const loadSnapshot = useCallback(async (target?: string | null) => {
-    const id = target ?? groupId;
-    if (!id) {
-      setSnapshot(null);
-      return;
-    }
-    const [snapshotResponse, operationResponse] = await Promise.all([
-      supabase.rpc("group_snapshot", { p_group_id: id }),
-      supabase.rpc("get_my_active_session", { p_group_id: id }),
-    ]);
-    if (snapshotResponse.error) {
-      notify(snapshotResponse.error.message, true);
-      return;
-    }
-    setSnapshot(snapshotResponse.data as Snapshot);
-    if (operationResponse.data) setOperation(operationResponse.data as ActiveOperation);
-  }, [groupId, notify]);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthReady(true);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
-      setAuthReady(true);
-    });
-    return () => data.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!session) {
-      setGroups([]);
-      setGroupId(null);
-      setSnapshot(null);
-      return;
-    }
-    loadGroups();
-  }, [session, loadGroups]);
-
-  useEffect(() => {
-    if (session && groupId) loadSnapshot(groupId);
-  }, [session, groupId, loadSnapshot]);
-
-  useEffect(() => {
-    const seasonId = snapshot?.season?.id;
-    if (!seasonId) return;
-    const refresh = () => loadSnapshot(groupId);
-    const channel = supabase.channel(`territory-v2-${seasonId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "season_territories", filter: `season_id=eq.${seasonId}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "attacks", filter: `season_id=eq.${seasonId}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "activity_events", filter: `season_id=eq.${seasonId}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "player_actions", filter: `season_id=eq.${seasonId}` }, refresh)
-      .subscribe();
-    const polling = window.setInterval(refresh, 20_000);
-    return () => {
-      window.clearInterval(polling);
-      supabase.removeChannel(channel);
-    };
-  }, [snapshot?.season?.id, groupId, loadSnapshot]);
-
-  async function beginAction(kind: string, state: string, attackId?: string) {
-    if (!snapshot?.season) return;
-    setBusy(true);
-    const { data, error } = await supabase.rpc("game_begin_action", {
-      p_season_id: snapshot.season.id,
-      p_territory_id: state,
-      p_action_type: kind,
-      p_attack_id: attackId ?? null,
-    });
-    setBusy(false);
-    if (error) {
-      notify(error.message, true);
-      return;
-    }
-    setOperation(data as ActiveOperation);
-  }
 
   if (!authReady) return <Loading label="Loading the battlefield" />;
   if (!session) return <AuthStage notify={notify} />;

@@ -90,7 +90,10 @@ async function createPlayer(name: string): Promise<Player> {
  * order; the first entry creates the group and is therefore the commissioner
  * (and, in test-mode groups, holds turn one).
  */
-async function startSeason(homes: Array<[string, string]>, options: { testMode?: boolean } = {}): Promise<Season> {
+async function startSeason(
+  homes: Array<[string, string]>,
+  options: { testMode?: boolean; timezone?: string } = {},
+): Promise<Season> {
   const players: Player[] = [];
   for (const [name] of homes) players.push(await createPlayer(name));
 
@@ -114,6 +117,12 @@ async function startSeason(homes: Array<[string, string]>, options: { testMode?:
   for (const [index, [, home]] of homes.entries()) {
     const saved = await players[index].client.rpc("set_home_state", { p_group_id: groupId, p_home_state: home });
     if (saved.error) throw saved.error;
+  }
+  // Nothing sets groups.timezone yet (finding 12), so the day-boundary probes
+  // write it directly before the season is stamped.
+  if (options.timezone) {
+    const zoned = await admin.from("groups").update({ timezone: options.timezone }).eq("id", groupId);
+    if (zoned.error) throw zoned.error;
   }
   const started = await players[0].client.rpc("start_season", { p_group_id: groupId });
   if (started.error) throw started.error;
@@ -854,19 +863,59 @@ test("engine internals are not executable by authenticated players", async () =>
 // fortify_log.played_on all DEFAULT to `current_date` (the database's UTC date),
 // while run_daily_tick and refresh_player_actions compare against
 // `(now() at time zone groups.timezone)::date`. A season started while the UTC
-// date is already ahead of the group's local date therefore records a
-// last_scored_on one day in its own future and silently skips a scoring day.
-// This probe is inherently clock-dependent (the two dates only differ for part
-// of each day); Task 8 should make it deterministic by parameterising the clock.
-// Un-skip once the defaults and the comparisons use the same day boundary.
-test("a season's last_scored_on is stamped in the group's local day, not UTC", { skip: "Finding 11" }, async () => {
-  const { groupId, seasonId } = await startSeason([["Wilf", "WA"], ["Xia", "FL"]]);
-  // Etc/GMT+12 is a fixed UTC-12 zone with no DST.
-  await admin.from("groups").update({ timezone: "Etc/GMT+12" }).eq("id", groupId);
-  const groupLocalDate = new Date(Date.now() - 12 * 3_600_000).toISOString().slice(0, 10);
+// date was already ahead of the group's local date recorded a last_scored_on one
+// day in its own future and silently skipped a scoring day, and the once-per-day
+// fortify rolled over at UTC midnight while moves rolled over at group-local
+// midnight.
+//
+// Deterministic by construction rather than by luck: Etc/GMT+12 is a fixed UTC-12
+// zone and Etc/GMT-14 a fixed UTC+14 one (POSIX inverts the sign; neither has
+// DST). They are 26 hours apart, so at every instant they sit on different
+// calendar days and at least one of them differs from the UTC date -- the probe
+// discriminates whatever time of day it runs.
+test("every day-boundary column is stamped in the group's local day, not UTC", async () => {
+  const localDatesAround = (offsetHours: number, tookMs: number) => {
+    const shift = offsetHours * 3_600_000;
+    return new Set([
+      new Date(Date.now() - tookMs + shift).toISOString().slice(0, 10),
+      new Date(Date.now() + shift).toISOString().slice(0, 10),
+    ]);
+  };
 
-  const { data } = await admin.from("seasons").select("last_scored_on").eq("id", seasonId);
-  assert.equal(data?.[0]?.last_scored_on, groupLocalDate);
+  const observed: string[] = [];
+  for (const [zone, offsetHours, home] of [["Etc/GMT+12", -12, "WA"], ["Etc/GMT-14", 14, "FL"]] as const) {
+    const startedAt = Date.now();
+    const { players, seasonId } = await startSeason(
+      [["Wilf", home], ["Xia", home === "WA" ? "OR" : "GA"]],
+      { timezone: zone },
+    );
+
+    const fortify = await begin(players.Wilf.client, seasonId, home, "fortify");
+    const outcome = await answerUntilResolved(players.Wilf.client, fortify.session_id);
+    assert.equal(outcome.status, "completed");
+
+    // Recomputed with the elapsed window so a UTC midnight crossing mid-probe
+    // cannot flake it.
+    const acceptable = localDatesAround(offsetHours, Date.now() - startedAt);
+
+    const { data: seasonRows } = await admin.from("seasons").select("last_scored_on").eq("id", seasonId);
+    const scoredOn = seasonRows?.[0]?.last_scored_on as string;
+    assert.ok(acceptable.has(scoredOn), `${zone}: last_scored_on ${scoredOn} is not a ${zone} date`);
+
+    const { data: actionRows } = await admin
+      .from("player_actions").select("last_refresh_on").eq("season_id", seasonId).eq("user_id", players.Wilf.id);
+    const refreshOn = actionRows?.[0]?.last_refresh_on as string;
+    assert.ok(acceptable.has(refreshOn), `${zone}: last_refresh_on ${refreshOn} is not a ${zone} date`);
+
+    const { data: fortifyRows } = await admin
+      .from("fortify_log").select("played_on").eq("season_id", seasonId).eq("user_id", players.Wilf.id);
+    const playedOn = fortifyRows?.[0]?.played_on as string;
+    assert.ok(acceptable.has(playedOn), `${zone}: played_on ${playedOn} is not a ${zone} date`);
+
+    observed.push(scoredOn);
+  }
+
+  assert.notEqual(observed[0], observed[1], "UTC-12 and UTC+14 are always on different calendar days");
 });
 
 // ---------------------------------------------------------------------------

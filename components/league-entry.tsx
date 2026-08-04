@@ -44,6 +44,7 @@ export default function LeagueEntry({ user, onCreated, notify }: { user: User; o
         <div className={styles.logoLine}><div className={styles.logoMarkSmall}>T</div><strong>Territory</strong></div>
         <span className={styles.muted}>{user.email}</span>
         <h1>Choose your battlefield.</h1>
+        <p className={styles.entryWelcome}>Welcome to Territory — sports trivia over a map of the fifty states. Join a friend&apos;s league with an invite code, or start your own and send the code around.</p>
         <div className={styles.segmented}>
           <button className={tab === "join" ? styles.segmentActive : ""} onClick={() => setTab("join")}>Join league</button>
           <button className={tab === "create" ? styles.segmentActive : ""} onClick={() => setTab("create")}>Create league</button>

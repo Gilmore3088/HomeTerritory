@@ -150,6 +150,10 @@ function MissionDock({ snapshot, me, defense, homePending, isMyTurn, turnHolderN
   if (!isMyTurn) {
     return <div className={styles.missionDock}><div><span>WAITING</span><h2>{turnHolderName ? `It's ${turnHolderName}'s turn` : "Another player is up"}</h2><p>You can defend if attacked. Your moves arrive when your turn starts.</p></div></div>;
   }
+  // A mid-season joiner has no home state; their opening move is any claim.
+  if (me && !me.home_state) {
+    return <div className={styles.missionDock}><div><span>NEW ARRIVAL</span><h2>Plant your flag</h2><p>You joined a season in progress. Claim any unowned state to get on the map.</p></div></div>;
+  }
   if (snapshot.actions_remaining === 0) {
     return <div className={styles.missionDock}><div><span>ACTIONS SPENT</span><h2>Hold the line</h2><p>Claiming, attacking and fortifying all spend a move. More arrive at the daily refresh.</p></div>{snapshot.group.test_mode && <button disabled={busy} onClick={refill}>Refill test actions</button>}</div>;
   }

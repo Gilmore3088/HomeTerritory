@@ -62,7 +62,7 @@ export default function AuthStage({ notify }: { notify: (text: string, error?: b
       <div className={styles.authBackdrop} aria-hidden="true">
         <svg viewBox="0 0 1030 620">
           {Object.entries(PATHS).map(([code, path]) => (
-            <path key={code} d={path} fill={code === "TX" ? "#E34A34" : "rgba(255,255,255,.08)"} stroke="rgba(255,255,255,.13)" strokeWidth="1" />
+            <path key={code} d={path} fill={code === "TX" ? "#e0332f" : "rgba(17,17,17,.05)"} stroke="rgba(17,17,17,.12)" strokeWidth="1" />
           ))}
         </svg>
       </div>

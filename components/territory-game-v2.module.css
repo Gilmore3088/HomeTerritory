@@ -56,3 +56,68 @@
 .resultPage section small{color:rgba(255,255,255,.8)}
 .resultPage section button{background:#111;color:#fff;border:2px solid #111}
 .resultPage section button:hover{background:#fff;color:#111}
+
+/* ---- P2b Task 5: auth/landing -> Broadcast ---- */
+.authPage{background:var(--paper);color:var(--ink)}
+.authHero .kicker{color:var(--muted)}
+.authHero h1{color:var(--ink)}
+.authHero p{color:var(--muted)}
+.authPage .logoMark{background:var(--dock);color:#fff}
+.authPanel{background:var(--card);border:1px solid var(--line);color:var(--ink);box-shadow:0 18px 50px rgba(17,17,17,.08)}
+.authPanel .segmented{background:var(--paper-2,#f0ece0)}
+.authPanel .segmented button{color:var(--muted)}
+.authPanel .segmented .segmentActive{background:var(--dock);color:#fff}
+.authPanel .form label span{color:var(--muted)}
+.authPanel .form input{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.authPanel .form input:focus{border-color:var(--ink)}
+.authPanel .confirmNote{background:var(--paper-2,#f0ece0);color:var(--ink);border:1px solid var(--line)}
+.authPanel .primaryButton{background:var(--rival);color:#fff;border:0}
+
+/* ---- P2b Task 6: league entry + lobby + picker -> Broadcast ---- */
+.entryPage{background:var(--paper);color:var(--ink)}
+.entryPanel{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.entryPanel h1{color:var(--ink)}
+.entryWelcome{margin:0;color:var(--muted);max-width:44ch}
+.entryPanel .segmented{background:var(--paper-2,#f0ece0)}
+.entryPanel .segmented .segmentActive{background:var(--dock);color:#fff}
+.entryPanel .form input{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.entryPanel .sportGrid button{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.entryPanel .sportGrid .sportActive{background:var(--mine);color:#fff;border-color:var(--mine-ink,#0a4fb0)}
+.entryPanel .primaryButton{background:var(--dock);color:#fff}
+.entryPanel .textButton{color:var(--muted)}
+.lobbyPage{background:var(--paper);color:var(--ink)}
+.lobbySheet{background:var(--card);border-top:1px solid var(--line);color:var(--ink)}
+.lobbyHeader h1{color:var(--ink)}
+.lobbyHeader select{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.inviteStrip{background:var(--dock);color:#fff}
+.inviteStrip span{color:rgba(255,255,255,.65)}
+.inviteStrip strong{color:var(--gold);letter-spacing:.12em}
+.inviteStrip button{background:rgba(255,255,255,.14);color:#fff;border:0}
+.homeChoice h2{color:var(--ink)}
+.homeChoice p{color:var(--muted)}
+.homeChoice select{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.playerRail .playerAvatar strong{color:var(--ink)}
+.playerRail .playerAvatar small{color:var(--muted)}
+.lobbyPage .startButton{background:var(--rival);color:#fff;border:0}
+.lobbyPage .textButton{color:var(--muted)}
+.leagueModal{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.leagueModal .modalHeader h2{color:var(--ink)}
+.leagueOption{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
+.leagueOption small{color:var(--muted)}
+.leagueOptionActive{border-color:var(--ink)}
+
+/* ---- P2b Task 7: standings + feed + loading -> Broadcast ---- */
+.overlayPage{background:var(--paper);color:var(--ink)}
+.overlayHeading span{color:var(--muted);letter-spacing:.14em}
+.overlayHeading h1{color:var(--ink)}
+.overlayHeading p{color:var(--muted)}
+.rankingRow{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.rankNumber{color:var(--muted)}
+.rankingRow small{color:var(--muted)}
+.feedItem{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.feedItem small{color:var(--muted)}
+.feedItem span{color:var(--muted)}
+.empty{color:var(--muted)}
+.loading{background:var(--paper);color:var(--ink)}
+.loading span{color:var(--muted)}
+.loadingOrb{border-color:var(--neutral);border-top-color:var(--mine)}

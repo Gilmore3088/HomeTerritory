@@ -10,7 +10,7 @@ import LeagueEntry from "./league-entry";
 import LobbyStage from "./lobby-stage";
 import GameShell from "./game-shell";
 import QuestionArena from "./question-arena";
-import { LeaguePicker, Loading, LoadErrorScreen } from "./game-overlays";
+import { LeaguePicker, Loading, LoadErrorScreen, SeasonComplete } from "./game-overlays";
 
 const supabase = createClient();
 
@@ -64,6 +64,11 @@ export default function TerritoryGame() {
   }
 
   const me = snapshot.members.find((member) => member.user_id === snapshot.current_user_id);
+  // An ended season used to fall through to a frozen GameShell; it gets a
+  // proper closing screen now.
+  if (snapshot.season && snapshot.season.status !== "active") {
+    return <SeasonComplete snapshot={snapshot} />;
+  }
   if (snapshot.group.status === "lobby" || !snapshot.season) {
     return (
       <LobbyStage

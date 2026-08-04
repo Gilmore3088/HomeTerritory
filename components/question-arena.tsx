@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { STATE_NAMES } from "@/lib/game-constants";
+import { resultCopy } from "@/lib/ux-copy";
 import type { ActiveOperation, ResultState } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
 import { Loading } from "./game-overlays";
@@ -36,7 +37,13 @@ export default function QuestionArena({ operation, result, setOperation, setResu
 
   useEffect(() => {
     timedOut.current = false;
+    maxSecondsRef.current = 0;
   }, [attemptId]);
+
+  // The countdown bar needs a denominator; the first tick after a question is
+  // served sees (nearly) the full window, so the largest observed remaining
+  // time per attempt is the working total.
+  const maxSecondsRef = useRef(0);
 
   // The timer has to reach the newest submit without restarting on every
   // keystroke, so it reads the latest one through a ref instead of listing an
@@ -51,6 +58,7 @@ export default function QuestionArena({ operation, result, setOperation, setResu
     const deadline = new Date(expiresAt).getTime();
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      if (remaining > maxSecondsRef.current) maxSecondsRef.current = remaining;
       setSeconds(remaining);
       if (remaining === 0 && !timedOut.current && !busy) {
         timedOut.current = true;
@@ -80,10 +88,13 @@ export default function QuestionArena({ operation, result, setOperation, setResu
     }
     const ok = data.status !== "failed";
     setOperation(null);
+    // A timeout reads differently from a wrong answer; the server cannot tell
+    // them apart (both arrive as a submit), so the distinct copy lives here.
+    const copy = resultCopy({ status: data.status, timedOut: timedOut.current, actionType: operation.action_type });
     setResult({
       ok,
-      title: ok ? data.status === "contested" ? "Challenge issued" : "Territory secured" : "Operation failed",
-      message: data.message ?? (ok ? "The map changed." : "The map did not move."),
+      title: copy.title,
+      message: timedOut.current ? copy.message : data.message ?? copy.message,
       correctAnswer: data.correct_answer ?? null,
     });
   }
@@ -108,5 +119,5 @@ export default function QuestionArena({ operation, result, setOperation, setResu
   if (!operation || !question) return <Loading label="Restoring question" />;
   const operationLabel = operation.action_type === "home" ? "HOME GROUND" : operation.action_type === "claim" ? "CLAIM" : operation.action_type === "attack" ? "ATTACK" : operation.action_type === "defend" ? "DEFENSE" : "FORTIFY";
 
-  return <main className={styles.questionPage}><div className={styles.questionState}>{operation.territory_id}</div><header><div><span>{operationLabel} · TIER {question.tier}</span><strong>{STATE_NAMES[operation.territory_id]}</strong></div><div className={`${styles.timer} ${seconds <= 8 ? styles.timerDanger : ""}`}>0:{String(seconds).padStart(2, "0")}</div></header><section className={styles.questionCard}><div className={styles.streak}>{Array.from({ length: operation.required_correct }, (_, index) => <span key={index} className={index < operation.correct_count ? styles.streakDone : ""} />)}</div><h1>{question.text}</h1>{question.format === "multiple_choice" ? <div className={styles.answerGrid}>{(question.options ?? []).map((option) => <button key={option} className={answer === option ? styles.answerSelected : ""} onClick={() => setAnswer(option)}>{option}</button>)}</div> : <input className={styles.freeAnswer} autoFocus value={answer} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Type your answer" />}<button className={styles.lockButton} disabled={busy || !answer} onClick={() => submit()}>{busy ? "Checking…" : "Lock answer"}</button></section></main>;
+  return <main className={styles.questionPage}><div className={styles.questionState}>{operation.territory_id}</div><header><div><span>{operationLabel} · TIER {question.tier}</span><strong>{STATE_NAMES[operation.territory_id]}</strong></div><div className={`${styles.timer} ${seconds <= 8 ? styles.timerDanger : ""}`}>0:{String(seconds).padStart(2, "0")}</div></header><div className={styles.timerTrack} aria-hidden="true"><div className={`${styles.timerFill} ${seconds <= 8 ? styles.timerFillDanger : ""}`} style={{ width: `${maxSecondsRef.current > 0 ? Math.round((seconds / maxSecondsRef.current) * 100) : 100}%` }} /></div><section className={styles.questionCard}><div className={styles.streak}>{Array.from({ length: operation.required_correct }, (_, index) => <span key={index} className={index < operation.correct_count ? styles.streakDone : ""} />)}</div><h1>{question.text}</h1>{question.format === "multiple_choice" ? <div className={styles.answerGrid}>{(question.options ?? []).map((option) => <button key={option} className={answer === option ? styles.answerSelected : ""} onClick={() => setAnswer(option)}>{option}</button>)}</div> : <input className={styles.freeAnswer} autoFocus value={answer} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Type your answer" />}<button className={styles.lockButton} disabled={busy || !answer} onClick={() => submit()}>{busy ? "Checking…" : "Lock answer"}</button></section></main>;
 }

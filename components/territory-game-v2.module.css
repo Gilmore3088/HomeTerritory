@@ -23,3 +23,36 @@
 .hudPips{display:flex;gap:3px;margin-top:2px}
 .hudPips i{width:6px;height:6px;border-radius:50%;background:var(--neutral,#e7e3d8);border:1px solid var(--neutral-line,#c8c2b2)}
 .hudPips i.hudPipFilled{background:var(--mine,#1d6fe0);border-color:var(--mine-ink,#0a4fb0)}
+
+/* ---- P2b Task 3: question screen -> Broadcast light focus mode ---- */
+.questionPage{background:var(--paper);color:var(--ink)}
+.questionPage header span{color:var(--muted);letter-spacing:.14em}
+.questionPage header strong{color:var(--ink)}
+.questionState{color:rgba(17,17,17,.06);-webkit-text-stroke:0}
+.timer{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.timerDanger{background:var(--rival);color:#fff;border-color:var(--rival-ink,#a81f1c)}
+.timerTrack{position:relative;z-index:1;height:6px;margin-top:10px;border-radius:999px;background:var(--neutral);overflow:hidden}
+.timerFill{height:100%;border-radius:999px;background:var(--gold);transition:width .25s linear}
+.timerFillDanger{background:var(--rival)}
+.questionPage .questionCard{background:transparent}
+.questionPage .questionCard h1{color:var(--ink)}
+.questionPage .streak span{background:var(--neutral);border:1px solid var(--neutral-line,#c8c2b2)}
+.questionPage .streak .streakDone{background:var(--mine);border-color:var(--mine-ink,#0a4fb0)}
+.questionPage .answerGrid button{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.questionPage .answerGrid button:hover{border-color:var(--ink)}
+.questionPage .answerGrid .answerSelected{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.questionPage .freeAnswer{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.questionPage .lockButton{background:var(--dock);color:#fff}
+.questionPage .lockButton:disabled{opacity:.4}
+
+/* ---- P2b Task 4: result screen -> Broadcast poster ---- */
+.resultPage{color:#fff}
+.resultSuccess{background:var(--mine)}
+.resultFailure{background:var(--rival)}
+.resultPage .resultHalo{opacity:.25}
+.resultPage section span{color:rgba(255,255,255,.75);letter-spacing:.16em}
+.resultPage section h1{color:#fff}
+.resultPage section p{color:rgba(255,255,255,.92)}
+.resultPage section small{color:rgba(255,255,255,.8)}
+.resultPage section button{background:#111;color:#fff;border:2px solid #111}
+.resultPage section button:hover{background:#fff;color:#111}

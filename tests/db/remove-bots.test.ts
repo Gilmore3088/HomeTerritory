@@ -48,10 +48,10 @@ test("start_season requires two members and seeds all homes at hold 1", async ()
     p_difficulty: "standard",
     p_test_mode: true,
   });
-  assert.equal(create.error, null, create.error?.message);
+  assert.equal(create.error, null, create.error?.message ?? "");
   const groupId = create.data as string;
   const home = await solo.rpc("set_home_state", { p_group_id: groupId, p_home_state: "MT" });
-  assert.equal(home.error, null, home.error?.message);
+  assert.equal(home.error, null, home.error?.message ?? "");
 
   const aloneStart = await solo.rpc("start_season", { p_group_id: groupId });
   assert.ok(aloneStart.error, "a single member cannot start a season");
@@ -61,12 +61,12 @@ test("start_season requires two members and seeds all homes at hold 1", async ()
   const invite = await admin.from("groups").select("invite_code").eq("id", groupId).single();
   assert.equal(invite.error, null);
   const join = await rival.rpc("join_group", { p_invite_code: invite.data!.invite_code });
-  assert.equal(join.error, null, join.error?.message);
+  assert.equal(join.error, null, join.error?.message ?? "");
   const rivalHome = await rival.rpc("set_home_state", { p_group_id: groupId, p_home_state: "WY" });
-  assert.equal(rivalHome.error, null, rivalHome.error?.message);
+  assert.equal(rivalHome.error, null, rivalHome.error?.message ?? "");
 
   const start = await solo.rpc("start_season", { p_group_id: groupId });
-  assert.equal(start.error, null, start.error?.message);
+  assert.equal(start.error, null, start.error?.message ?? "");
 
   const holds = await admin
     .from("season_territories")
@@ -80,7 +80,7 @@ test("start_season requires two members and seeds all homes at hold 1", async ()
   }
 
   const snap = await solo.rpc("group_snapshot", { p_group_id: groupId });
-  assert.equal(snap.error, null, snap.error?.message);
+  assert.equal(snap.error, null, snap.error?.message ?? "");
   const members = (snap.data as { members: Array<Record<string, unknown>> }).members;
   assert.equal(members.length, 2);
   for (const member of members) {
@@ -88,7 +88,7 @@ test("start_season requires two members and seeds all homes at hold 1", async ()
   }
 
   const rotate = await solo.rpc("end_test_turn", { p_group_id: groupId });
-  assert.equal(rotate.error, null, rotate.error?.message);
+  assert.equal(rotate.error, null, rotate.error?.message ?? "");
   const next = rotate.data as { next_user_id: string | null };
   assert.ok(next.next_user_id, "the turn should rotate to the other member");
 });

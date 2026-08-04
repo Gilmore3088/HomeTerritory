@@ -358,11 +358,13 @@ test("test_refill_actions is rejected outside test-mode groups and refills insid
 // stripped a state's trivia from every league. Three distinct reporters are
 // required now, and one account counts once.
 test("report_question voids and refunds immediately but quarantines only on the third distinct reporter", async () => {
-  const { players, groupId, seasonId } = await startSeason([["Vic", "WA"], ["Wren", "ID"], ["Zoe", "CA"]]);
+  const { players, groupId, seasonId } = await startSeason([["Vic", "ID"], ["Wren", "WY"], ["Zoe", "ND"]]);
 
-  // All three home states border OR, so every player can open a claim on it, and
-  // parking the rest of OR's bank guarantees they all draw the same question.
-  const bank = await admin.from("questions").select("id").eq("territory_id", "OR").eq("active", true).order("id");
+  // All three home states border MT, so every player can open a claim on it, and
+  // parking the rest of MT's bank guarantees they all draw the same question.
+  // Deliberately not OR: this probe quarantines its subject, which would leave OR
+  // with no active questions for tests/db/engine.test.ts running in parallel.
+  const bank = await admin.from("questions").select("id").eq("territory_id", "MT").eq("active", true).order("id");
   assert.equal(bank.error, null);
   const ids = (bank.data ?? []).map((row) => (row as { id: string }).id);
   const subjectId = ids[0];
@@ -375,7 +377,7 @@ test("report_question voids and refunds immediately but quarantines only on the 
   };
 
   const reportOnce = async (player: Player) => {
-    const session = await begin(player.client, seasonId, "OR", "claim");
+    const session = await begin(player.client, seasonId, "MT", "claim");
     const { data: attemptRows } = await admin
       .from("question_attempts").select("question_id").eq("id", session.question.attempt_id);
     assert.equal(attemptRows?.[0]?.question_id, subjectId, "the probe must serve the parked-down subject question");
@@ -646,6 +648,43 @@ test("the trailing player needs one fewer correct answer than the leader for the
   assert.equal(underdogAttack.required_correct, 1, "the trailing player gets a one-answer discount");
 });
 
+// Finding 21: pick_next_question selects on a question's *observed* difficulty,
+// but the answer timer and the "TIER n" header both read the row's *stored*
+// tier. An empirically hard question stored as tier 1 got 30 seconds instead of
+// 45, and a two-answer attack could be labelled TIER 3.
+test("the served tier is the adaptive tier that selection and the timer both use", async () => {
+  const { players, seasonId } = await startSeason([["Ola", "CA"], ["Pau", "FL"]]);
+
+  // Deliberately not OR, for the same reason as the option-order probe above.
+  const bank = await admin
+    .from("questions").select("id,tier").eq("territory_id", "NV").eq("active", true).order("id");
+  assert.equal(bank.error, null);
+  const rows = (bank.data ?? []) as Array<{ id: string; tier: number }>;
+  const subject = rows[0];
+  const parkedIds = rows.slice(1).map((row) => row.id);
+
+  try {
+    if (parkedIds.length) await admin.from("questions").update({ active: false }).in("id", parkedIds);
+
+    // Stored tier 1, but answered wrong far more often than right: the selector
+    // already treats this as tier 3, so the payload and the timer must agree.
+    const seeded = await admin
+      .from("questions")
+      .update({ tier: 1, attempt_count: 20, correct_count: 2 })
+      .eq("id", subject.id);
+    assert.equal(seeded.error, null);
+
+    const session = await begin(players.Ola.client, seasonId, "NV", "claim");
+    assert.equal(session.question.tier, 3, "an empirically hard question must be served as tier 3");
+
+    const windowMs = new Date(session.question.expires_at).getTime() - Date.now();
+    assert.ok(windowMs > 35_000, `a tier 3 question gets 45 seconds, got ${Math.round(windowMs / 1000)}s`);
+  } finally {
+    await admin.from("questions").update({ tier: subject.tier, attempt_count: 0, correct_count: 0 }).eq("id", subject.id);
+    if (parkedIds.length) await admin.from("questions").update({ active: true }).in("id", parkedIds);
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Resume-after-refresh (Step 3, exercised through the RPC the UI calls)
 // ---------------------------------------------------------------------------
@@ -676,10 +715,12 @@ test("get_my_active_session resumes an unfinished question after a refresh", asy
 test("resuming a question serves a stable option order that does not leak the answer", async () => {
   const { players, groupId, seasonId } = await startSeason([["Mona", "WA"], ["Nils", "FL"]]);
 
+  // Deliberately not OR: this probe parks a territory's whole question bank, and
+  // tests/db/engine.test.ts runs in a parallel process and claims OR.
   const bank = await admin
     .from("questions")
     .select("id,options,correct_answer")
-    .eq("territory_id", "OR")
+    .eq("territory_id", "ID")
     .eq("format", "multiple_choice")
     .eq("active", true)
     .order("id")
@@ -692,7 +733,7 @@ test("resuming a question serves a stable option order that does not leak the an
   const parked = await admin
     .from("questions")
     .update({ active: false })
-    .eq("territory_id", "OR")
+    .eq("territory_id", "ID")
     .neq("id", subject.id)
     .select("id");
   assert.equal(parked.error, null);
@@ -709,7 +750,7 @@ test("resuming a question serves a stable option order that does not leak the an
         .eq("season_id", seasonId)
         .eq("user_id", players.Mona.id);
 
-      const session = await begin(players.Mona.client, seasonId, "OR", "claim");
+      const session = await begin(players.Mona.client, seasonId, "ID", "claim");
       assert.equal(session.question.format, "multiple_choice");
       assert.deepEqual([...session.question.options].sort(), [...options].sort(), "no option may be dropped");
 

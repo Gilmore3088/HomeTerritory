@@ -1,0 +1,76 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { STATE_NAMES } from "@/lib/game-constants";
+import type { ActiveOperation, ResultState } from "@/lib/game-types";
+import styles from "./territory-game-v2.module.css";
+import { Loading } from "./game-overlays";
+
+const supabase = createClient();
+
+export default function QuestionArena({ operation, result, setOperation, setResult, refresh, notify }: {
+  operation: ActiveOperation | null;
+  result: ResultState | null;
+  setOperation: (operation: ActiveOperation | null) => void;
+  setResult: (result: ResultState | null) => void;
+  refresh: () => void;
+  notify: (text: string, error?: boolean) => void;
+}) {
+  const [answer, setAnswer] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const timedOut = useRef(false);
+  const question = operation?.question;
+
+  useEffect(() => {
+    setAnswer("");
+    timedOut.current = false;
+  }, [question?.attempt_id]);
+  useEffect(() => {
+    if (!question) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((new Date(question.expires_at).getTime() - Date.now()) / 1000));
+      setSeconds(remaining);
+      if (remaining === 0 && !timedOut.current && !busy) {
+        timedOut.current = true;
+        void submit("");
+      }
+    };
+    tick();
+    const timer = window.setInterval(tick, 250);
+    return () => window.clearInterval(timer);
+  }, [question?.attempt_id, busy]);
+
+  async function submit(value = answer) {
+    if (!operation || busy) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("game_submit_answer", { p_session_id: operation.session_id, p_answer: value });
+    setBusy(false);
+    if (error) {
+      notify(error.message, true);
+      return;
+    }
+    if (data.status === "active" && data.question) {
+      setOperation({ ...operation, question: data.question, correct_count: data.correct_count });
+      setAnswer("");
+      return;
+    }
+    const ok = data.status !== "failed";
+    setOperation(null);
+    setResult({
+      ok,
+      title: ok ? data.status === "contested" ? "Challenge issued" : "Territory secured" : "Operation failed",
+      message: data.message ?? (ok ? "The map changed." : "The map did not move."),
+      correctAnswer: data.correct_answer ?? null,
+    });
+  }
+
+  if (result) {
+    return <main className={`${styles.resultPage} ${result.ok ? styles.resultSuccess : styles.resultFailure}`}><div className={styles.resultHalo} /><section><span>{result.ok ? "SUCCESS" : "FAILED"}</span><h1>{result.title}</h1><p>{result.message}</p>{result.correctAnswer && <small>Correct answer: {result.correctAnswer}</small>}<button onClick={() => { setResult(null); refresh(); }}>Return to map</button></section></main>;
+  }
+  if (!operation || !question) return <Loading label="Restoring question" />;
+  const operationLabel = operation.action_type === "home" ? "HOME GROUND" : operation.action_type === "claim" ? "CLAIM" : operation.action_type === "attack" ? "ATTACK" : operation.action_type === "defend" ? "DEFENSE" : "FORTIFY";
+
+  return <main className={styles.questionPage}><div className={styles.questionState}>{operation.territory_id}</div><header><div><span>{operationLabel} · TIER {question.tier}</span><strong>{STATE_NAMES[operation.territory_id]}</strong></div><div className={`${styles.timer} ${seconds <= 8 ? styles.timerDanger : ""}`}>0:{String(seconds).padStart(2, "0")}</div></header><section className={styles.questionCard}><div className={styles.streak}>{Array.from({ length: operation.required_correct }, (_, index) => <span key={index} className={index < operation.correct_count ? styles.streakDone : ""} />)}</div><h1>{question.text}</h1>{question.format === "multiple_choice" ? <div className={styles.answerGrid}>{(question.options ?? []).map((option) => <button key={option} className={answer === option ? styles.answerSelected : ""} onClick={() => setAnswer(option)}>{option}</button>)}</div> : <input className={styles.freeAnswer} autoFocus value={answer} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Type your answer" />}<button className={styles.lockButton} disabled={busy || !answer} onClick={() => submit()}>{busy ? "Checking…" : "Lock answer"}</button></section></main>;
+}

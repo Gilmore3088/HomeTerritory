@@ -499,11 +499,10 @@ test("test-mode turn rotation blocks off-turn moves, rotates on end_test_turn, a
   const anaWaiting = await snapshot(players.Ana.client, groupId);
   assert.equal(anaWaiting.actions_remaining, 0, "an off-turn player holds no actions");
 
-  // Off-turn claim is rejected. Recorded in the findings doc: the message is
-  // "No moves remaining" (the zeroed action balance trips first), not the
-  // "It is not your turn" the enforce_test_turn_session trigger would raise.
+  // Finding 19: the zeroed action balance used to trip first and answer "No
+  // moves remaining", so the turn gate's real message was unreachable.
   const blocked = await beginExpectingError(players.Ana.client, seasonId, "CA", "claim");
-  assert.match(blocked, /no moves remaining|not your turn/i);
+  assert.match(blocked, /not your turn/i);
 
   // Off-turn defense is allowed even though Zed still holds the turn.
   const attackId = await attackUntilContested(players.Zed, seasonId, "OR");

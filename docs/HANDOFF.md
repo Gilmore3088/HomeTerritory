@@ -5,7 +5,7 @@ This doc is the single source of truth to resume in a fresh session. Read it fir
 
 ## TL;DR
 
-Territory is an async, private-group **sports-trivia + territory-war** game (Next.js 16 + Supabase). Over this session it went from "code-complete MVP that couldn't be run" to **two shipped phases on `main`** and a third in progress. First real playtest verdict: **"this seems like a decent game"** — the core loop works and is fun. The remaining work is making that core *accessible* (a real solo mode, login/session cleanup, balance) and *live* (deploy).
+Territory is an async, private-group **sports-trivia + territory-war** game (Next.js 16 + Supabase). Over this session it went from "code-complete MVP that couldn't be run" to **two shipped phases on `main`** and a third in progress. First real playtest verdict: **"this seems like a decent game"** — the core loop works and is fun. The remaining work is making that core *accessible* (login/session cleanup, balance; bots were removed 2026-08-04, so play is multiplayer-only) and *live* (deploy).
 
 ## What's shipped (merged to `main`, pushed, CI green)
 
@@ -30,19 +30,29 @@ Played two-window (commish@ + member@). Verdict: **decent game.** Two balance/tu
 
 ## NEXT-BUILD PRIORITIES (agreed order)
 
-1. **Solo-vs-bots turn mode.** Today `end_test_turn` HARD-REQUIRES ≥2 humans ("at least two human players are required to rotate turns"), and bots (`is_bot`, `run_test_bot_turns`) exist but **do NOT auto-take-and-end their turns** — so single-human solo play is impossible, and any unattended seat stalls the game. Fix: let bots count toward the minimum AND auto-play+end their turns on advance (or a no-turn async solo mode). This is the #1 blocker to solo evaluation — ahead of finishing the visual redesign.
-2. **Login / session cleanup.** "Enter the map" gets stuck in some window states (accounts + browser auth verified working; it's a client/session-state bug). Sessions persist confusingly across windows.
-3. **Balance pass** on the two playtest issues above (action economy symmetry; separate defense from offense, or make the split intentional and legible).
-4. **Deploy live** (owner action — see below).
-5. Finish **P2b** (visual), then **P2c** (motion/juice + animated map), **P2d** (PWA install).
+> **DECISION 2026-08-04 (supersedes the old #1):** Bots are REMOVED from the game
+> entirely — they were test scaffolding, and a trivia game has no honest bot
+> opponent (a bot either knows every answer or is a dice roll). Solo-vs-bots is
+> dead; Territory is multiplayer-only, and solo evaluation stays two-window.
+> Done on branch `worktree-remove-bots` (plan
+> `docs/superpowers/plans/2026-08-04-remove-bots.md`): migration
+> `20260804210000_remove_bot_players.sql` drops `is_bot` / `bot_action_log` /
+> `run_test_bot_turns`, strips bot branches from `start_season` /
+> `end_test_turn` / `group_snapshot` / `advance_season`, cleans bot rows, and
+> RESTORES `profiles_id_fkey` (closes the P5 orphaned-profiles backlog item).
+
+1. **Login / session cleanup.** "Enter the map" gets stuck in some window states (accounts + browser auth verified working; it's a client/session-state bug). Sessions persist confusingly across windows.
+2. **Balance pass** on the two playtest issues above (action economy symmetry; separate defense from offense, or make the split intentional and legible).
+3. **Deploy live** (owner action — see below; the staged migration count now includes the bot-removal migration).
+4. Finish **P2b** (visual), then **P2c** (motion/juice + animated map), **P2d** (PWA install).
 
 ## How to resume
 
 - Local stack: `npm run stack:start` (started with `-x vector -x logflare`; `npm run stack:reset` for a clean board). API `http://127.0.0.1:55321` (ports +1000). Details: `docs/superpowers/local-stack.md`.
 - Legacy JWT keys are required for `test:db` and dev-vs-local (the `sb_*` keys 401). Get them from `supabase status`.
 - Run the app vs local stack: `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<anon> npm run dev`.
-- Seed accounts (local, password `playtest-password-1`): `commish@` / `member@` (group "Advance Demo League", 2 real humans — best for two-window play), plus `solo@`/`rival@` (group "Solo vs Bot"). Seed scripts live in `.superpowers/sdd/2026-08-04-p2b-broadcast-restyle/`.
-- Playtest today = **two browser windows** (one incognito), two real logins, drive both sides, "End turn" to pass. Solo-vs-bots does NOT work yet (priority #1).
+- Seed accounts (local, password `playtest-password-1`): `commish@` / `member@` (group "Advance Demo League", 2 real humans — best for two-window play), plus `solo@`/`rival@` (group "Solo vs Bot" — name is historical; bots no longer exist). The old `seed-vs-bots*.mjs` scripts were deleted with the bot removal.
+- Playtest = **two browser windows** (one incognito), two real logins, drive both sides, "End turn" to pass. That is the intended mode: bots were removed 2026-08-04, so there is no solo mode.
 - Process: this repo uses the superpowers brainstorm → spec → plan → subagent-driven-development flow. Specs in `docs/superpowers/specs/`, plans in `docs/superpowers/plans/`, deferred items in `docs/superpowers/backlog.md`.
 
 ## Deployment (owner action — needs YOUR credentials)
@@ -55,4 +65,5 @@ Nothing is deployed; production DB is still on the pre-Phase-1 schema. To go liv
 ## Git state
 
 - `main`: Phase 1 + Phase 2a, merged + pushed to `origin/main`, CI green.
-- `feat/p2b-broadcast`: P2b spec + plan + Task 1 + logout fix. Local only — not merged, not pushed. Decide whether to continue P2b here or reprioritize to the solo-mode/login/balance work first (recommended: do #1-#3 above before more visual work).
+- `worktree-remove-bots` (worktree at `.claude/worktrees/remove-bots`): the bot removal — 5 commits, full suite green (32 unit / 46 db / 1 smoke). Merge to `main` first.
+- `feat/p2b-broadcast`: P2b spec + plan + Task 1 + logout fix. Local only — not merged, not pushed. After the bot-removal merge, bring `main` into this branch (the `test-signup` edge-function fix exists identically on both sides), then resume at P2b Task 2 — or do login/balance first (recommended).

@@ -59,11 +59,10 @@ Played two-window (commish@ + member@). Verdict: **decent game.** Two balance/tu
 
 Nothing is deployed; production DB is still on the pre-Phase-1 schema. To go live:
 1. In GitHub → Settings → Secrets and variables → Actions, add `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`.
-2. Re-run the **Deploy Supabase database** workflow (it auto-triggers on pushes to `supabase/migrations/**` but currently fails at auth because the secrets are unset). This applies the **14 staged migrations** (12 Phase-1 + 2 P2a).
+2. Re-run the **Deploy Supabase database** workflow (it auto-triggers on pushes to `supabase/migrations/**` but currently fails at auth because the secrets are unset). This applies the **15 staged migrations** (12 Phase-1 + 2 P2a + bot removal).
 3. Deploy the app to Vercel (import the repo, set env vars from `.env.example`, set `NEXT_PUBLIC_SITE_URL`), and configure Supabase Auth URLs.
 
 ## Git state
 
-- `main`: Phase 1 + Phase 2a, merged + pushed to `origin/main`, CI green.
-- `worktree-remove-bots` (worktree at `.claude/worktrees/remove-bots`): the bot removal — 5 commits, full suite green (32 unit / 46 db / 1 smoke). Merge to `main` first.
-- `feat/p2b-broadcast`: P2b spec + plan + Task 1 + logout fix. Local only — not merged, not pushed. After the bot-removal merge, bring `main` into this branch (the `test-signup` edge-function fix exists identically on both sides), then resume at P2b Task 2 — or do login/balance first (recommended).
+- Everything is on `main`, pushed, CI green (2026-08-04): Phase 1 + Phase 2a + the bot removal (PR #13) + P2b progress (spec/plan, Task 1 Broadcast hero restyle, logout fix). The `feat/p2b-broadcast` and `worktree-remove-bots` branches were merged and deleted.
+- Resume P2b at Task 2 on a fresh branch off `main` (plan `docs/superpowers/plans/2026-08-04-p2b-broadcast-restyle.md`, ledger `.superpowers/sdd/2026-08-04-p2b-broadcast-restyle/progress.md`) — or do login/balance first (recommended).

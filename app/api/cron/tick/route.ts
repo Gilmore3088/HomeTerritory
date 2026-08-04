@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-const EXPECTED_SCHEDULE = "5 8 * * *";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export async function GET(request: Request) {
-  const authorization = request.headers.get("authorization");
-  const schedule = request.headers.get("x-vercel-cron-schedule");
-  const cronSecret = process.env.CRON_SECRET;
-
-  const hasConfiguredSecret = Boolean(cronSecret && authorization === `Bearer ${cronSecret}`);
-  const isVercelScheduledRun = schedule === EXPECTED_SCHEDULE;
-
-  if (!hasConfiguredSecret && !isVercelScheduledRun) {
+  if (!isAuthorizedCronRequest(request.headers, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,10 +11,5 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.rpc("run_daily_tick");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({
-    ok: true,
-    schedule: schedule ?? null,
-    result: data,
-    ranAt: new Date().toISOString(),
-  });
+  return NextResponse.json({ ok: true, result: data, ranAt: new Date().toISOString() });
 }

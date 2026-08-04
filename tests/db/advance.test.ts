@@ -53,3 +53,52 @@ test("run_daily_tick still scores active seasons via advance_season", async () =
     .from("daily_score_events").select("scored_on").eq("season_id", seasonId);
   assert.ok((events ?? []).length > 0, "run_daily_tick scored via advance_season");
 });
+
+test("advance_group_day: commissioner advances, others are rejected", async () => {
+  const commish = await createTestUser("Commish");
+  const member = await createTestUser("Member");
+  const outsider = await createTestUser("Outsider");
+  const created = await commish.rpc("create_group_v2", {
+    p_name: "Gate League", p_sports: ["NFL"], p_season_length: 14,
+    p_opening_mode: "open", p_board_scope: "fifty", p_difficulty: "standard", p_test_mode: true,
+  });
+  const groupId = created.data as string;
+  const snap = await commish.rpc("group_snapshot", { p_group_id: groupId });
+  const invite = (snap.data as { group: { invite_code: string } }).group.invite_code;
+  await member.rpc("join_group", { p_invite_code: invite });
+  await commish.rpc("set_home_state", { p_group_id: groupId, p_home_state: "TX" });
+  await member.rpc("set_home_state", { p_group_id: groupId, p_home_state: "NY" });
+  await commish.rpc("start_season", { p_group_id: groupId });
+
+  const asMember = await member.rpc("advance_group_day", { p_group_id: groupId });
+  assert.ok(asMember.error, "non-commissioner member is rejected");
+  const asOutsider = await outsider.rpc("advance_group_day", { p_group_id: groupId });
+  assert.ok(asOutsider.error, "non-member is rejected");
+  const asCommish = await commish.rpc("advance_group_day", { p_group_id: groupId });
+  assert.equal(asCommish.error, null, "commissioner succeeds");
+});
+
+test("advance_group_day scores at most once per local day", async () => {
+  const commish = await createTestUser("Commish2");
+  const member = await createTestUser("Member2");
+  const created = await commish.rpc("create_group_v2", {
+    p_name: "Idem League", p_sports: ["NFL"], p_season_length: 14,
+    p_opening_mode: "open", p_board_scope: "fifty", p_difficulty: "standard", p_test_mode: true,
+  });
+  const groupId = created.data as string;
+  const snap = await commish.rpc("group_snapshot", { p_group_id: groupId });
+  const invite = (snap.data as { group: { invite_code: string } }).group.invite_code;
+  await member.rpc("join_group", { p_invite_code: invite });
+  await commish.rpc("set_home_state", { p_group_id: groupId, p_home_state: "CA" });
+  await member.rpc("set_home_state", { p_group_id: groupId, p_home_state: "FL" });
+  await commish.rpc("start_season", { p_group_id: groupId });
+  const seasonId = ((await commish.rpc("group_snapshot", { p_group_id: groupId }))
+    .data as { season: { id: string } }).season.id;
+  await admin.from("seasons").update({ last_scored_on: "2000-01-01" }).eq("id", seasonId);
+
+  await commish.rpc("advance_group_day", { p_group_id: groupId });
+  const c1 = ((await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? []).length;
+  await commish.rpc("advance_group_day", { p_group_id: groupId });
+  const c2 = ((await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? []).length;
+  assert.equal(c2, c1, "second same-day advance does not double-score");
+});

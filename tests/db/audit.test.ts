@@ -1063,6 +1063,8 @@ test("no security-definer function in public is authenticated-executable outside
     "test_refill_actions(p_group_id uuid)",
     // components/game-runtime-controls.tsx: flagging a bad question.
     "report_question(p_attempt_id uuid, p_reason text)",
+    // commissioner-gated day advance, called from the game shell.
+    "advance_group_day(p_group_id uuid)",
   ];
 
   // Not client RPCs, but each has a specific, verified reason to be

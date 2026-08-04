@@ -102,3 +102,17 @@ test("advance_group_day scores at most once per local day", async () => {
   const c2 = ((await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? []).length;
   assert.equal(c2, c1, "second same-day advance does not double-score");
 });
+
+test("get_my_active_session returns null after the session resolves", async () => {
+  const a = await createTestUser("ReconA");
+  const b = await createTestUser("ReconB");
+  const { groupId, seasonId } = await startedSeason(a, b, "TX", "NY");
+  const begun = await a.rpc("game_begin_action", {
+    p_season_id: seasonId, p_territory_id: "TX", p_action_type: "home", p_attack_id: null,
+  });
+  assert.equal(begun.error, null);
+  const sessionId = (begun.data as { session_id: string }).session_id;
+  await answerUntilResolved(a, sessionId);
+  const active = await a.rpc("get_my_active_session", { p_group_id: groupId });
+  assert.equal(active.data, null, "no active session after resolution");
+});

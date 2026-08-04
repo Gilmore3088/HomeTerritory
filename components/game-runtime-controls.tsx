@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { useSupabaseSession } from "@/hooks/use-supabase-session";
 import styles from "./game-runtime-controls.module.css";
 
 const supabase = createClient();
@@ -41,16 +42,23 @@ type RuntimeState = {
 };
 
 export default function GameRuntimeControls() {
-  const [session, setSession] = useState<Session | null>(null);
+  const { session } = useSupabaseSession();
   const [state, setState] = useState<RuntimeState | null>(null);
   const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(Boolean(session));
+
+  // Dropping the previous player's runtime state belongs to the sign-out
+  // transition itself, not to an effect: React re-renders with the cleared
+  // state before anything paints, so a sign-in on the same page never shows
+  // the previous account's turn banner.
+  if (Boolean(session) !== signedIn) {
+    setSignedIn(Boolean(session));
+    if (!session) setState(null);
+  }
 
   const load = useCallback(async (activeSession: Session | null) => {
-    if (!activeSession) {
-      setState(null);
-      return;
-    }
+    if (!activeSession) return;
 
     const { data: groupData, error: groupError } = await supabase.rpc("get_my_groups");
     if (groupError) {
@@ -99,28 +107,9 @@ export default function GameRuntimeControls() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      void load(data.session);
-    });
-
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!mounted) return;
-      setSession(nextSession);
-      void load(nextSession);
-    });
-
-    return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
-    };
-  }, [load]);
-
-  useEffect(() => {
     if (!session) return;
     const refresh = () => void load(session);
+    refresh();
     const interval = window.setInterval(refresh, 5_000);
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);

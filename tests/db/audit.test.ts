@@ -490,6 +490,38 @@ test("fortify spends one move and is refused once moves run out", async () => {
   assert.match(await beginExpectingError(players.Di.client, seasonId, "WA", "fortify"), /no moves remaining/i);
 });
 
+// Finding 8: the fortify_log row was written at begin time, so a fortify lost to
+// a wrong answer still consumed the day's one fortify for that state and the
+// player was told "You already fortified this state today" when they had in fact
+// failed it. The winning answer claims the day now.
+test("a fortify lost to a wrong answer can be retried the same day", async () => {
+  const { players, groupId, seasonId } = await startSeason([["Fia", "WA"], ["Gus", "FL"]]);
+
+  const session = await begin(players.Fia.client, seasonId, "WA", "fortify");
+  const failed = await players.Fia.client.rpc("game_submit_answer", {
+    p_session_id: session.session_id,
+    p_answer: "definitely wrong answer xyzzy",
+  });
+  assert.equal(failed.error, null);
+  assert.equal((failed.data as { status: string }).status, "failed");
+
+  const { data: logRows } = await admin
+    .from("fortify_log")
+    .select("played_on")
+    .eq("season_id", seasonId)
+    .eq("territory_id", "WA")
+    .eq("user_id", players.Fia.id);
+  assert.equal(logRows?.length, 0, "a failed fortify must not claim the day's fortify");
+
+  const retry = await begin(players.Fia.client, seasonId, "WA", "fortify");
+  const outcome = await answerUntilResolved(players.Fia.client, retry.session_id);
+  assert.equal(outcome.status, "completed");
+
+  const after = await snapshot(players.Fia.client, groupId);
+  assert.equal(territory(after, "WA").hold_level, 2);
+  assert.match(await beginExpectingError(players.Fia.client, seasonId, "WA", "fortify"), /already fortified/i);
+});
+
 // ---------------------------------------------------------------------------
 // 14. Claim cooldowns
 // ---------------------------------------------------------------------------

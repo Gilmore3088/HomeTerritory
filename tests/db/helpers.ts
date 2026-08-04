@@ -14,6 +14,13 @@ if (!serviceKey || !anonKey) {
 
 export const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
+export const stackUrl = url;
+export const stackAnonKey = anonKey;
+
+export function anonClient(): SupabaseClient {
+  return createClient(url, anonKey, { auth: { persistSession: false } });
+}
+
 export async function createTestUser(displayName: string): Promise<SupabaseClient> {
   const email = `${crypto.randomUUID()}@playtest.local`;
   const password = "playtest-password-1";

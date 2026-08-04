@@ -176,7 +176,10 @@ test("a completed attack streak contests the state with a 24 hour defense deadli
 
   const session = await begin(players.Eve.client, seasonId, "OR", "attack");
   assert.equal(session.required_correct, 2, "a hold_level 1 state costs two correct answers on standard difficulty");
-  assert.equal(session.question.tier, 2);
+  // Deliberately not asserting session.question.tier. pick_next_question sorts
+  // by the question's *adaptive* tier (its observed correct rate once it has 5+
+  // attempts), not its stored tier, so the served row's tier column drifts as
+  // the bank accumulates history. See finding 21.
 
   const outcome = (await answerUntilResolved(players.Eve.client, session.session_id)) as { status: string; attack_id?: string };
   // Recorded in the findings doc: ownership does NOT transfer on a winning
@@ -560,17 +563,26 @@ test("get_my_active_session resumes an unfinished question after a refresh", asy
 // the answer. Un-skip once the resume path shuffles.
 test("resuming a question does not reveal the answer through option order", { skip: "Finding 1" }, async () => {
   const { players, groupId, seasonId } = await startSeason([["Mona", "WA"], ["Nils", "FL"]]);
-  const session = await begin(players.Mona.client, seasonId, "OR", "claim");
-  assert.equal(session.question.format, "multiple_choice");
 
-  const answer = await correctAnswerFor(session.session_id);
-  let leaked = 0;
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const resumed = await players.Mona.client.rpc("get_my_active_session", { p_group_id: groupId });
-    assert.equal(resumed.error, null);
-    if ((resumed.data as BeginResult).question.options[0] === answer) leaked += 1;
+  // Only multiple-choice rows carry options, and pick_next_question's adaptive
+  // ordering (finding 21) can serve any stored tier, so park the free_fill rows
+  // for this territory to keep the probe deterministic.
+  await admin.from("questions").update({ active: false }).eq("territory_id", "OR").eq("format", "free_fill");
+  try {
+    const session = await begin(players.Mona.client, seasonId, "OR", "claim");
+    assert.equal(session.question.format, "multiple_choice");
+
+    const answer = await correctAnswerFor(session.session_id);
+    let leaked = 0;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const resumed = await players.Mona.client.rpc("get_my_active_session", { p_group_id: groupId });
+      assert.equal(resumed.error, null);
+      if ((resumed.data as BeginResult).question.options[0] === answer) leaked += 1;
+    }
+    assert.ok(leaked < 8, "the correct answer must not be pinned to the first option on resume");
+  } finally {
+    await admin.from("questions").update({ active: true }).eq("territory_id", "OR").eq("format", "free_fill");
   }
-  assert.ok(leaked < 8, "the correct answer must not be pinned to the first option on resume");
 });
 
 // Finding 3: nothing re-checks the attack after `game_begin_action` admits the

@@ -15,7 +15,7 @@ import { LeaguePicker, Loading } from "./game-overlays";
 
 const supabase = createClient();
 
-export default function TerritoryGameV2() {
+export default function TerritoryGame() {
   const { session, authReady } = useSupabaseSession();
   const {
     groups,

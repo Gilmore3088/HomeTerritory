@@ -980,18 +980,16 @@ test("a second attacker on the same state fails cleanly instead of raising a con
   assert.equal(after.actions_remaining, 3, "a move that bought nothing is returned");
 });
 
-// Finding 6: run_test_bot_turns is SECURITY DEFINER and performs no caller check
-// at all, and its `revoke all ... from public` never removed the grants Supabase
-// hands to anon/authenticated. It is an internal helper driven by run_daily_tick
-// and called by no client, so revoking EXECUTE is the whole fix.
-test("run_test_bot_turns is not reachable by any client role", async () => {
-  const { players, seasonId } = await startSeason([["Uli", "WA"], ["Vera", "FL"]], { testMode: true });
-
-  const asMember = await players.Vera.client.rpc("run_test_bot_turns", { p_season_id: seasonId });
-  assert.ok(asMember.error, "a signed-in member must not be able to drive bot turns");
-
-  const asCommissioner = await players.Uli.client.rpc("run_test_bot_turns", { p_season_id: seasonId });
-  assert.ok(asCommissioner.error, "not even the commissioner reaches the internal helper directly");
+// Finding 6 (historical): run_test_bot_turns was SECURITY DEFINER with no
+// caller check, locked to service_role in 20260803180300. Bots were then
+// removed outright in 20260804210000 -- the durable guarantee is now that the
+// function does not exist for anyone, including the service role.
+test("run_test_bot_turns does not exist", async () => {
+  const probe = await admin.rpc("run_test_bot_turns", {
+    p_season_id: "00000000-0000-0000-0000-000000000000",
+  });
+  assert.ok(probe.error, "the function should be gone from the schema");
+  assert.match(probe.error!.message, /could not find|does not exist|schema cache/i);
 });
 
 // Findings 6 and 7 share one root cause: Supabase's default privileges grant

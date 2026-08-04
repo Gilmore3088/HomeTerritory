@@ -793,6 +793,13 @@ test("get_my_active_session resumes an unfinished question after a refresh", asy
 // so the served order is the only variable: a verbatim resume pins the answer to
 // index 0 on all ten rounds, a per-attempt shuffle does so with probability
 // 8^-10.
+//
+// S2 hardening: the original probe counted only `options[0] === correct_answer`,
+// so a shuffle that pinned the answer to any *other* fixed slot -- e.g. always
+// last -- would leak 100% of the time and still pass. It now records the
+// answer's index on every round and checks (a) the served order is not the
+// same array on every round, and (b) no single index -- not just 0 -- accounts
+// for a suspicious share of the rounds.
 test("resuming a question serves a stable option order that does not leak the answer", async () => {
   const { players, groupId, seasonId } = await startSeason([["Mona", "WA"], ["Nils", "FL"]]);
 
@@ -836,6 +843,10 @@ test("resuming a question serves a stable option order that does not leak the an
     const ROUNDS = 20;
     const MAX_ANSWER_FIRST = 8;
     let answerFirst = 0;
+    // S2: per-index tallies and the raw served orders, so a leak pinned to any
+    // slot (or a shuffle that never varies at all) is caught, not just index 0.
+    const indexCounts = new Map<number, number>();
+    const servedOrders: string[][] = [];
     for (let round = 0; round < ROUNDS; round += 1) {
       await admin
         .from("player_actions")
@@ -849,6 +860,9 @@ test("resuming a question serves a stable option order that does not leak the an
 
       const answer = await correctAnswerFor(session.session_id);
       if (session.question.options[0] === answer) answerFirst += 1;
+      const answerIndex = session.question.options.indexOf(answer);
+      indexCounts.set(answerIndex, (indexCounts.get(answerIndex) ?? 0) + 1);
+      servedOrders.push(session.question.options);
 
       // Every poll re-reads the active session. The order must not move while
       // the player is looking at it.
@@ -869,6 +883,34 @@ test("resuming a question serves a stable option order that does not leak the an
       `the correct answer landed first ${answerFirst}/${ROUNDS} times; a fair shuffle over ` +
         `${OPTION_COUNT} options should average ${(ROUNDS / OPTION_COUNT).toFixed(1)}`,
     );
+
+    // (a) A shuffle that returns the exact same permutation on every round is not
+    // a shuffle, regardless of where it happens to put the answer. Twenty
+    // independent draws from 12! possible orderings landing on the same order
+    // every time has probability effectively indistinguishable from zero for a
+    // real shuffle, so any repeat-only outcome here means the order is not being
+    // randomized per attempt at all.
+    const distinctOrders = new Set(servedOrders.map((order) => order.join("|")));
+    assert.ok(
+      distinctOrders.size > 1,
+      "the served option order was identical on every round -- the shuffle is not varying per attempt",
+    );
+
+    // (b) Generalizes the answerFirst bound above to every slot, so an
+    // answer-last (or answer-pinned-anywhere) leak fails the probe too, not just
+    // answer-first. Same Binomial(20, 1/12) model and the same MAX_ANSWER_FIRST
+    // threshold (fail at >=9/20 -- P(X>=9) = 1.4e-5 for a fair shuffle) applied to
+    // each of the 12 indices instead of only index 0. By the union bound, the
+    // chance that *some* index falsely trips this on a healthy shuffle is at most
+    // 12 x 1.4e-5 = 1.7e-4 -- about one run in 6,000 -- so this stays a tight,
+    // rarely-flaky gate while covering every fixed-position leak, not just one.
+    for (const [index, count] of indexCounts) {
+      assert.ok(
+        count <= MAX_ANSWER_FIRST,
+        `the correct answer landed at index ${index} ${count}/${ROUNDS} times; a fair shuffle over ` +
+          `${OPTION_COUNT} options must not pin it to any single slot`,
+      );
+    }
   } finally {
     await admin.from("questions").update({ options: subject.options }).eq("id", subject.id);
     const ids = (parked.data ?? []).map((row) => (row as { id: string }).id);
@@ -978,29 +1020,101 @@ test("no security-definer function in public is executable by anon", async () =>
   assert.deepEqual(reachable.map((row) => row.function), [], "these functions are reachable unauthenticated");
 });
 
-// The same trap, one role up: these are internal helpers that a signed-in player
-// must never call directly, whatever the default privileges hand out.
-test("engine internals are not executable by authenticated players", async () => {
-  const INTERNAL = [
-    "handle_new_user()",
-    "pick_next_question(p_session_id uuid)",
-    "refresh_player_actions(p_season_id uuid, p_user_id uuid)",
-    "resolve_attack_win(p_attack_id uuid, p_reason text)",
-    "resolve_expired_attacks(p_season_id uuid)",
-    "resolve_expired_sessions(p_season_id uuid)",
-    "run_daily_tick()",
-    "run_test_bot_turns(p_season_id uuid)",
+// The same trap, one role up -- inverted to an allowlist (S4). The previous
+// version hardcoded an 8-name INTERNAL list and asserted each stayed
+// unreachable; that only guards the functions someone remembered to add to the
+// list. A new security-definer helper that a migration accidentally left
+// authenticated-executable would never appear in INTERNAL and would slip
+// through silently. This version enumerates every security-definer function
+// and asserts the reachable set is a subset of what the client (or the schema
+// itself) actually needs -- so a new leak fails the test by default instead of
+// requiring someone to remember to block it.
+test("no security-definer function in public is authenticated-executable outside the client-callable allowlist", async () => {
+  // The RPCs the browser client calls directly via `supabase.rpc(...)`.
+  // Verified against the current tree with
+  // `grep -rn '\.rpc(' components hooks app` (12 call sites, 12 distinct RPC
+  // names -- `run_daily_tick` is called too, but only from
+  // `app/api/cron/tick/route.ts` through the service-role admin client, never
+  // from the browser's `authenticated` session, so it is deliberately absent
+  // here and still covered by the "unexpected" check below).
+  const CLIENT_CALLABLE = [
+    // components/game-runtime-controls.tsx + hooks/use-game-state.ts: league picker.
+    "get_my_groups()",
+    // components/game-runtime-controls.tsx + hooks/use-game-state.ts: main board read.
+    "group_snapshot(p_group_id uuid)",
+    // hooks/use-game-state.ts: claim/attack/defend/fortify a territory.
+    "game_begin_action(p_season_id uuid, p_territory_id text, p_action_type text, p_attack_id uuid)",
+    // components/question-arena.tsx: submitting an answer to the served question.
+    "game_submit_answer(p_session_id uuid, p_answer text)",
+    // components/game-runtime-controls.tsx + hooks/use-game-state.ts: resume an
+    // unfinished question after a refresh, realtime event, or poll.
+    "get_my_active_session(p_group_id uuid)",
+    // components/league-entry.tsx: joining a league by invite code.
+    "join_group(p_invite_code text)",
+    // components/league-entry.tsx: creating a league (the current, v2 shape).
+    "create_group_v2(p_name text, p_sports text[], p_season_length integer, p_opening_mode text, p_board_scope text, p_difficulty text, p_test_mode boolean)",
+    // components/lobby-stage.tsx: picking a home state in the lobby.
+    "set_home_state(p_group_id uuid, p_home_state text)",
+    // components/lobby-stage.tsx: the commissioner starting the season.
+    "start_season(p_group_id uuid)",
+    // components/game-runtime-controls.tsx: test-mode turn rotation.
+    "end_test_turn(p_group_id uuid)",
+    // components/territory-game.tsx: test-mode action refill.
+    "test_refill_actions(p_group_id uuid)",
+    // components/game-runtime-controls.tsx: flagging a bad question.
+    "report_question(p_attempt_id uuid, p_reason text)",
+  ];
+
+  // Not client RPCs, but each has a specific, verified reason to be
+  // authenticated-executable -- kept in a separate list rather than folded
+  // into CLIENT_CALLABLE so that list stays an honest answer to "what does the
+  // browser call". Both discovered while building this probe; neither was
+  // previously guarded by the INTERNAL list this test replaces.
+  const AUTHENTICATED_EXECUTE_OTHER = [
+    // `is_group_member` backs every "members read ..." RLS policy on groups,
+    // group_members, seasons, season_territories, player_actions, attacks,
+    // activity_events and daily_score_events (202607300001_initial_schema.sql).
+    // Postgres evaluates a policy's USING clause as the querying role, so
+    // `authenticated` needs EXECUTE on it for any of those SELECTs to work at
+    // all -- revoking it would break every RLS-protected read, not just direct
+    // `supabase.rpc('is_group_member', ...)` calls. Not itself in
+    // CLIENT_CALLABLE because no component calls it directly.
+    "is_group_member(p_group_id uuid, p_user_id uuid)",
+    // `create_group` is the v1 league-creation RPC superseded by
+    // `create_group_v2` (finding 13): no client code calls it any more
+    // (`grep -rn "\"create_group\"" components hooks app` -- no hits, only
+    // `create_group_v2`), but its `grant execute ... to authenticated` from
+    // 202607300001_initial_schema.sql / 202607300728_fix_create_group_invite_
+    // generator.sql was never revoked when the v1 API route was deleted
+    // (8bf8aae). It is internally guarded (requires auth.uid(), validates its
+    // own input) so this is not an auth bypass, but it is dead-code drift the
+    // allowlist should surface rather than silently relabel as
+    // client-callable. Tracked in docs/superpowers/backlog.md for a future
+    // migration to revoke; kept here, explicitly, so this probe passes against
+    // today's actual grants without pretending the client calls it.
+    "create_group(p_name text, p_sports text[], p_season_length integer)",
   ];
 
   const { data, error } = await admin.rpc("security_definer_grants");
   assert.equal(error, null);
   const rows = data as Array<{ function: string; authenticated_execute: boolean }>;
+  assert.ok(rows.length >= 20, `expected the engine's functions to be enumerated, saw ${rows.length}`);
   const byName = new Map(rows.map((row) => [row.function, row.authenticated_execute]));
 
-  for (const name of INTERNAL) {
+  // Every allowlisted signature must still name a real function -- a stale or
+  // typo'd entry would otherwise sit here providing no protection at all.
+  for (const name of [...CLIENT_CALLABLE, ...AUTHENTICATED_EXECUTE_OTHER]) {
     assert.equal(byName.has(name), true, `${name} should still exist in the schema`);
-    assert.equal(byName.get(name), false, `${name} must not be callable by a signed-in player`);
   }
+
+  const allowed = new Set([...CLIENT_CALLABLE, ...AUTHENTICATED_EXECUTE_OTHER]);
+  const unexpected = rows.filter((row) => row.authenticated_execute && !allowed.has(row.function));
+  assert.deepEqual(
+    unexpected.map((row) => row.function),
+    [],
+    "these security-definer functions are authenticated-executable but are not on the client-callable " +
+      "allowlist or the documented exception list -- a signed-in player can call them directly",
+  );
 });
 
 // Finding 11: seasons.last_scored_on, player_actions.last_refresh_on and

@@ -1069,7 +1069,7 @@ test("every day-boundary column is stamped in the group's local day, not UTC", a
 // in the findings doc under "Realtime".
 // ---------------------------------------------------------------------------
 test("every table the map subscribes to carries the season_id the channel filters on", async () => {
-  // territory-game-v2.tsx subscribes to these four tables filtered by season_id.
+  // hooks/use-game-state.ts subscribes to these four tables filtered by season_id.
   const subscribed = ["season_territories", "attacks", "activity_events", "player_actions"];
   const { data, error } = await admin
     .from("season_territories")

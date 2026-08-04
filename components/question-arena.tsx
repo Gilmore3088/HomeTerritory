@@ -22,25 +22,45 @@ export default function QuestionArena({ operation, result, setOperation, setResu
   const [seconds, setSeconds] = useState(0);
   const timedOut = useRef(false);
   const question = operation?.question;
+  const attemptId = question?.attempt_id ?? null;
+  const expiresAt = question?.expires_at ?? null;
+  const [servedAttemptId, setServedAttemptId] = useState(attemptId);
+
+  // A new question means a blank answer box. Clearing it as the attempt id
+  // changes keeps the reset in the same render that first shows the new
+  // question, so the previous answer is never briefly visible under it.
+  if (attemptId !== servedAttemptId) {
+    setServedAttemptId(attemptId);
+    setAnswer("");
+  }
 
   useEffect(() => {
-    setAnswer("");
     timedOut.current = false;
-  }, [question?.attempt_id]);
+  }, [attemptId]);
+
+  // The timer has to reach the newest submit without restarting on every
+  // keystroke, so it reads the latest one through a ref instead of listing an
+  // identity that changes with the answer box.
+  const submitRef = useRef(submit);
   useEffect(() => {
-    if (!question) return;
+    submitRef.current = submit;
+  });
+
+  useEffect(() => {
+    if (!expiresAt) return;
+    const deadline = new Date(expiresAt).getTime();
     const tick = () => {
-      const remaining = Math.max(0, Math.ceil((new Date(question.expires_at).getTime() - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setSeconds(remaining);
       if (remaining === 0 && !timedOut.current && !busy) {
         timedOut.current = true;
-        void submit("");
+        void submitRef.current("");
       }
     };
     tick();
     const timer = window.setInterval(tick, 250);
     return () => window.clearInterval(timer);
-  }, [question?.attempt_id, busy]);
+  }, [expiresAt, busy]);
 
   async function submit(value = answer) {
     if (!operation || busy) return;

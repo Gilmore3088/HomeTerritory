@@ -33,6 +33,20 @@ export function useGameState(session: Session | null): GameState {
   const [result, setResult] = useState<ResultState | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [signedIn, setSignedIn] = useState(Boolean(session));
+
+  // Dropping the signed-out player's board belongs to the sign-out transition
+  // itself rather than to an effect: React re-renders with the cleared state
+  // before anything paints, so signing in as someone else on the same page
+  // never flashes the previous account's map.
+  if (Boolean(session) !== signedIn) {
+    setSignedIn(Boolean(session));
+    if (!session) {
+      setGroups([]);
+      setGroupId(null);
+      setSnapshot(null);
+    }
+  }
 
   const notify = useCallback((text: string, error = false) => {
     setToast({ text, error });
@@ -71,18 +85,23 @@ export function useGameState(session: Session | null): GameState {
     if (operationResponse.data) setOperation(operationResponse.data as ActiveOperation);
   }, [groupId, notify]);
 
+  // Both loaders write state only once their RPC has resolved, so each read is
+  // started from a local async function: that is what keeps the state writes in
+  // a continuation instead of in the effect body itself.
   useEffect(() => {
-    if (!session) {
-      setGroups([]);
-      setGroupId(null);
-      setSnapshot(null);
-      return;
+    if (!session) return;
+    async function readGroups() {
+      await loadGroups();
     }
-    loadGroups();
+    void readGroups();
   }, [session, loadGroups]);
 
   useEffect(() => {
-    if (session && groupId) loadSnapshot(groupId);
+    if (!session || !groupId) return;
+    async function readSnapshot() {
+      await loadSnapshot(groupId);
+    }
+    void readSnapshot();
   }, [session, groupId, loadSnapshot]);
 
   useEffect(() => {

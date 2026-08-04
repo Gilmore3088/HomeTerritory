@@ -631,14 +631,14 @@ test("resuming a question serves a stable option order that does not leak the an
   }
 });
 
-// Finding 3: nothing re-checks the attack after `game_begin_action` admits the
-// defender. If the 24h deadline lapses while the defense question is open, any
-// other player's snapshot runs resolve_expired_attacks and hands the state to
-// the attacker; the defender's correct answer then reports "You defended X" and
-// its unconditional `update season_territories set hold_level = hold_level + 1`
-// fortifies the *attacker's* new territory. Un-skip once game_submit_answer
-// verifies the attack is still 'contested' before mutating the map.
-test("a defense answered after the deadline cannot strengthen the new owner", { skip: "Finding 3" }, async () => {
+// Finding 3: nothing re-checked the attack after `game_begin_action` admitted
+// the defender. If the 24h deadline lapsed while the defense question was open,
+// any other player's snapshot ran resolve_expired_attacks and handed the state
+// to the attacker; the defender's correct answer then reported "You defended X"
+// and its unconditional `update season_territories set hold_level = hold_level +
+// 1` fortified the *attacker's* new territory. game_submit_answer now re-reads
+// the attack under a lock and voids the defense if it is no longer contested.
+test("a defense answered after the deadline cannot strengthen the new owner", async () => {
   const { players, groupId, seasonId } = await startSeason([["Otto", "WA"], ["Pam", "OR"]]);
   const attackId = await attackUntilContested(players.Otto, seasonId, "OR");
   const defense = await begin(players.Pam.client, seasonId, "OR", "defend", attackId);

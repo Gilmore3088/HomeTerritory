@@ -449,6 +449,33 @@ test("run_daily_tick writes a daily score event for held territories", async () 
   assert.equal(repeatRows?.[0]?.cumulative_score, mine!.points, "a repeat tick in the same day is a no-op");
 });
 
+// Finding 10: `refresh_player_actions` opened with `perform run_daily_tick()`,
+// and run_daily_tick loops over every active season in the database. Since
+// group_snapshot and game_begin_action both call it, every page load and every
+// move ran a full cross-tenant scoring pass. The cron route is the only
+// day-advancer now.
+test("a page load does not run the daily tick for every other league in the database", async () => {
+  const mine = await startSeason([["Hal", "WA"], ["Ida", "FL"]]);
+  const other = await startSeason([["Jem", "NY"], ["Kit", "TX"]]);
+
+  const backdated = await admin.from("seasons").update({ last_scored_on: "2020-01-01" }).eq("id", other.seasonId);
+  assert.equal(backdated.error, null);
+
+  // The two calls that used to fan out: a snapshot and a move.
+  await snapshot(mine.players.Hal.client, mine.groupId);
+  await begin(mine.players.Hal.client, mine.seasonId, "OR", "claim");
+
+  const { data: seasonRows } = await admin.from("seasons").select("last_scored_on").eq("id", other.seasonId);
+  assert.equal(
+    seasonRows?.[0]?.last_scored_on,
+    "2020-01-01",
+    "another league's season must not be scored by my page load",
+  );
+
+  const { data: events } = await admin.from("daily_score_events").select("user_id").eq("season_id", other.seasonId);
+  assert.equal(events?.length, 0, "no cross-tenant score events may be written by a snapshot");
+});
+
 // ---------------------------------------------------------------------------
 // 12. Turn rotation in test-mode leagues
 // ---------------------------------------------------------------------------

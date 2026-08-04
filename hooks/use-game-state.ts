@@ -25,6 +25,7 @@ export interface GameState {
   loadGroups: (preferred?: string | null) => Promise<void>;
   loadSnapshot: (target?: string | null) => Promise<void>;
   beginAction: (kind: string, state: string, attackId?: string) => Promise<void>;
+  advanceGroupDay: () => Promise<void>;
 }
 
 export function useGameState(session: Session | null): GameState {
@@ -151,6 +152,18 @@ export function useGameState(session: Session | null): GameState {
     setOperation(data as ActiveOperation);
   }
 
+  async function advanceGroupDay() {
+    if (!snapshot) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("advance_group_day", { p_group_id: snapshot.group.id });
+    setBusy(false);
+    if (error) notify(error.message, true);
+    else {
+      notify("The day advanced.");
+      loadSnapshot();
+    }
+  }
+
   return {
     groups,
     groupId,
@@ -167,5 +180,6 @@ export function useGameState(session: Session | null): GameState {
     loadGroups,
     loadSnapshot,
     beginAction,
+    advanceGroupDay,
   };
 }

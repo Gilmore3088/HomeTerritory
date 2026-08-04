@@ -8,9 +8,11 @@ import styles from "./game-runtime-controls.module.css";
 const supabase = createClient();
 
 export default function GameRuntimeControls() {
-  const { session, snapshot, operation, loadSnapshot } = useGameData();
+  const { session, snapshot, operation, loadSnapshot, advanceGroupDay } = useGameData();
   const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const isCommissioner = Boolean(snapshot && snapshot.group.commissioner_id === snapshot.current_user_id);
 
   const state = useMemo(() => {
     if (!session || !snapshot) return null;
@@ -104,6 +106,12 @@ export default function GameRuntimeControls() {
       <button type="button" className={styles.logout} onClick={logout} disabled={Boolean(busy)}>
         {busy === "logout" ? "Signing out…" : "Log out"}
       </button>
+
+      {isCommissioner && snapshot?.season && (
+        <button type="button" className={styles.logout} onClick={() => advanceGroupDay()} disabled={Boolean(busy)}>
+          Advance the day
+        </button>
+      )}
 
       {state?.activeAttemptId && (
         <button type="button" className={styles.report} onClick={reportQuestion} disabled={Boolean(busy)}>

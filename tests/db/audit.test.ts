@@ -344,36 +344,69 @@ test("test_refill_actions is rejected outside test-mode groups and refills insid
 // ---------------------------------------------------------------------------
 // 10. report_question quarantines the question and refunds the action
 // ---------------------------------------------------------------------------
-test("report_question quarantines the question, voids the session, and refunds the action", async () => {
-  const { players, groupId, seasonId } = await startSeason([["Vic", "WA"], ["Wren", "FL"]]);
-  const session = await begin(players.Vic.client, seasonId, "OR", "claim");
-  const spent = await snapshot(players.Vic.client, groupId);
-  assert.equal(spent.actions_remaining, 2);
+// Finding 9: one report used to set `questions.active = false` globally, with no
+// threshold and no per-reporter uniqueness, so a handful of reports permanently
+// stripped a state's trivia from every league. Three distinct reporters are
+// required now, and one account counts once.
+test("report_question voids and refunds immediately but quarantines only on the third distinct reporter", async () => {
+  const { players, groupId, seasonId } = await startSeason([["Vic", "WA"], ["Wren", "ID"], ["Zoe", "CA"]]);
 
-  const { data: attemptRows } = await admin
-    .from("question_attempts")
-    .select("question_id")
-    .eq("id", session.question.attempt_id);
-  const questionId = attemptRows?.[0]?.question_id as string;
+  // All three home states border OR, so every player can open a claim on it, and
+  // parking the rest of OR's bank guarantees they all draw the same question.
+  const bank = await admin.from("questions").select("id").eq("territory_id", "OR").eq("active", true).order("id");
+  assert.equal(bank.error, null);
+  const ids = (bank.data ?? []).map((row) => (row as { id: string }).id);
+  const subjectId = ids[0];
+  const parkedIds = ids.slice(1);
+  if (parkedIds.length) await admin.from("questions").update({ active: false }).in("id", parkedIds);
 
-  const reported = await players.Vic.client.rpc("report_question", {
-    p_attempt_id: session.question.attempt_id,
-    p_reason: "audit probe",
-  });
-  assert.equal(reported.error, null);
-  assert.equal((reported.data as { status: string }).status, "void");
+  const activeFlag = async () => {
+    const { data } = await admin.from("questions").select("active").eq("id", subjectId);
+    return data?.[0]?.active as boolean;
+  };
 
-  const { data: questionRows } = await admin.from("questions").select("active").eq("id", questionId);
-  assert.equal(questionRows?.[0]?.active, false, "a reported question is deactivated globally");
+  const reportOnce = async (player: Player) => {
+    const session = await begin(player.client, seasonId, "OR", "claim");
+    const { data: attemptRows } = await admin
+      .from("question_attempts").select("question_id").eq("id", session.question.attempt_id);
+    assert.equal(attemptRows?.[0]?.question_id, subjectId, "the probe must serve the parked-down subject question");
+    const reported = await player.client.rpc("report_question", {
+      p_attempt_id: session.question.attempt_id,
+      p_reason: "audit probe",
+    });
+    assert.equal(reported.error, null);
+    assert.equal((reported.data as { status: string }).status, "void");
+    const { data: sessionRows } = await admin.from("game_sessions").select("status").eq("id", session.session_id);
+    assert.equal(sessionRows?.[0]?.status, "void");
+    return reported.data as { reports: number };
+  };
 
-  const { data: sessionRows } = await admin.from("game_sessions").select("status").eq("id", session.session_id);
-  assert.equal(sessionRows?.[0]?.status, "void");
+  try {
+    const spentBefore = await snapshot(players.Vic.client, groupId);
+    assert.equal(spentBefore.actions_remaining, 3);
 
-  const after = await snapshot(players.Vic.client, groupId);
-  assert.equal(after.actions_remaining, 3, "the spent action is refunded");
+    const first = await reportOnce(players.Vic);
+    assert.equal(first.reports, 1);
+    assert.equal(await activeFlag(), true, "one report must not quarantine a shared question");
+    const refunded = await snapshot(players.Vic.client, groupId);
+    assert.equal(refunded.actions_remaining, 3, "the spent move is refunded on the first report");
 
-  // Leave the shared 550-question bank as we found it; the report is global.
-  await admin.from("questions").update({ active: true }).eq("id", questionId);
+    const repeat = await reportOnce(players.Vic);
+    assert.equal(repeat.reports, 1, "one account counts once, however often it reports");
+    assert.equal(await activeFlag(), true);
+
+    const second = await reportOnce(players.Wren);
+    assert.equal(second.reports, 2);
+    assert.equal(await activeFlag(), true);
+
+    const third = await reportOnce(players.Zoe);
+    assert.equal(third.reports, 3);
+    assert.equal(await activeFlag(), false, "three distinct reporters quarantine the question");
+  } finally {
+    // The bank is shared by every league, so leave it exactly as we found it.
+    await admin.from("question_reports").delete().eq("question_id", subjectId);
+    await admin.from("questions").update({ active: true }).in("id", ids);
+  }
 });
 
 // ---------------------------------------------------------------------------

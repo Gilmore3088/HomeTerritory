@@ -170,7 +170,7 @@ export default function GameRuntimeControls() {
     if (reason === null) return;
 
     setBusy("report");
-    const { error } = await supabase.rpc("report_question", {
+    const { data, error } = await supabase.rpc("report_question", {
       p_attempt_id: state.activeAttemptId,
       p_reason: reason.trim() || "Player reported a possible question problem",
     });
@@ -181,7 +181,9 @@ export default function GameRuntimeControls() {
       return;
     }
 
-    window.alert("Question quarantined and your move was refunded.");
+    // A question is only quarantined once three separate players report it, so
+    // report_question is the one that knows which outcome the player just got.
+    window.alert((data as { message?: string } | null)?.message ?? "Report filed and your move was refunded.");
     window.location.reload();
   }
 

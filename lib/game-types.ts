@@ -13,7 +13,6 @@ export interface Member {
   color_index: number;
   home_state?: string | null;
   home_completed?: boolean;
-  is_bot?: boolean;
 }
 export interface Territory {
   id: string;

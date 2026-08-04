@@ -89,8 +89,8 @@ signal you're talking to the empty local database, not production.
 ## Advancing the day locally
 
 `/api/cron/tick` is the only thing that advances a season's day, applies
-twilight decay, resolves attacks, runs bot turns and ends seasons — nothing
-does it implicitly any more. To advance a day against a dev server:
+twilight decay, resolves attacks and ends seasons — nothing does it
+implicitly any more. To advance a day against a dev server:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/tick

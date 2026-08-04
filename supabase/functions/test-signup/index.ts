@@ -72,7 +72,7 @@ Deno.serve(async (request: Request) => {
 
     const { error: profileError } = await admin
       .from("profiles")
-      .upsert({ id: user.id, display_name: displayName, is_bot: false }, { onConflict: "id" });
+      .upsert({ id: user.id, display_name: displayName }, { onConflict: "id" });
     if (profileError) return respond({ error: profileError.message }, 500);
 
     const { data: existingMembership, error: membershipLookupError } = await admin

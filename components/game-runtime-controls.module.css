@@ -1,5 +1,6 @@
 .logout,
-.report {
+.report,
+.advance {
   position: fixed;
   z-index: 180;
   min-height: 38px;
@@ -15,6 +16,12 @@
 .logout {
   top: 22px;
   right: 184px;
+  padding: 0 13px;
+}
+
+.advance {
+  top: 22px;
+  right: 292px;
   padding: 0 13px;
 }
 

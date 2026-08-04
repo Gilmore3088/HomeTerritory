@@ -108,7 +108,7 @@ export default function GameRuntimeControls() {
       </button>
 
       {isCommissioner && snapshot?.season && (
-        <button type="button" className={styles.logout} onClick={() => advanceGroupDay()} disabled={Boolean(busy)}>
+        <button type="button" className={styles.advance} onClick={() => advanceGroupDay()} disabled={Boolean(busy)}>
           Advance the day
         </button>
       )}

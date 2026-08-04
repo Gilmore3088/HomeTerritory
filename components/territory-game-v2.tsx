@@ -33,7 +33,6 @@ const PLAYER_COLORS = [
 ];
 const NEUTRAL = "#D8D9D2";
 const INK = "#142034";
-const PAPER = "#F8F6EF";
 const DANGER = "#E34A34";
 
 const STATE_NAMES: Record<string, string> = {

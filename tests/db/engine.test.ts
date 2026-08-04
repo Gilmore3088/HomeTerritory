@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { admin, answerUntilResolved, correctAnswerFor, createTestUser } from "./helpers.ts";
+import { answerUntilResolved, correctAnswerFor, createTestUser } from "./helpers.ts";
 
 type Snapshot = {
   current_user_id: string;

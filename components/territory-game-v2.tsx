@@ -12,15 +12,26 @@ import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { dayNumber, edgeErrorMessage, timeLeft } from "@/lib/game-format";
 import { isTerritoryActionBlocked } from "@/lib/game-rules";
-import mapData from "@/data/us-states";
-import adjacencyData from "@/data/adjacency.json";
+import {
+  ADJ,
+  ALL_STATES,
+  CENTROIDS,
+  DANGER,
+  INK,
+  LEADERS,
+  MAP_LABELS,
+  NEUTRAL,
+  PATHS,
+  SPORTS,
+  STATE_NAMES,
+  memberColor,
+} from "@/lib/game-constants";
 import type {
   ActiveOperation,
   Attack,
   GroupRow,
   Member,
   ResultState,
-  ScoreRow,
   Snapshot,
   Territory,
   ToastState,
@@ -29,45 +40,6 @@ import type {
 import styles from "./territory-game-v2.module.css";
 
 const supabase = createClient();
-
-const PATHS = mapData.paths as Record<string, string>;
-const CENTROIDS = mapData.centroids as Record<string, [number, number]>;
-const ADJ = adjacencyData.adjacency as Record<string, string[]>;
-const PLAYER_COLORS = [
-  "#0B6E99",
-  "#7A4CB4",
-  "#1F8A5B",
-  "#D18B16",
-  "#D74B4B",
-  "#168B95",
-  "#B55E32",
-  "#52677F",
-];
-const NEUTRAL = "#D8D9D2";
-const INK = "#142034";
-const DANGER = "#E34A34";
-
-const STATE_NAMES: Record<string, string> = {
-  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
-  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
-  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
-  KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
-  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
-  MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
-  NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
-  OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
-  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
-  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
-};
-const ALL_STATES = Object.keys(STATE_NAMES).sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
-const MAP_LABELS = ALL_STATES.filter((code) => !["CT", "DE", "MA", "MD", "NH", "NJ", "RI", "VT", "WV"].includes(code));
-const LEADERS: Record<string, number> = { VT: 132, NH: 158, MA: 184, RI: 210, CT: 236, NJ: 262, DE: 288, MD: 314, WV: 340 };
-const SPORTS = ["NFL", "CFB", "MLB", "NBA", "CBB", "NHL", "OTH"];
-
-
-function memberColor(member?: Pick<Member, "color_index"> | Pick<ScoreRow, "color_index"> | null) {
-  return PLAYER_COLORS[member?.color_index ?? 0] ?? PLAYER_COLORS[0];
-}
 
 export default function TerritoryGameV2() {
   const [session, setSession] = useState<Session | null>(null);

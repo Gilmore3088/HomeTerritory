@@ -40,7 +40,23 @@ waiting on the wall clock. See
 `docs/superpowers/plans/2026-08-04-p2a-foundation.md` for the design and task
 breakdown.
 
-Phase 2b (Broadcast restyle) is next.
+## Phase 2b (Broadcast restyle): complete
+
+Every screen renders in the Broadcast design system: auth, league entry,
+lobby, game shell (map/HUD/mission dock), question arena with visual timer,
+result posters, standings, activity feed, the in-app report dialog (native
+`window.prompt`/`alert` are gone), season-complete panel, and the load-error
+retry card. Result copy is action-aware — a timed-out defense reads "The
+clock beat your defense. The attacker takes the state.", never a generic
+"Time's up". Touch targets audited at 390px and 360px with Playwright: every
+interactive control is ≥44px with zero horizontal overflow, and the
+"Advance the day" control no longer overlaps the header league button on
+narrow screens. Full click-through (auth → entry → map → question → result →
+standings → feed → report → commissioner controls, plus attack/defense both
+ways between two accounts) verified clean with no console errors. See
+`docs/superpowers/plans/2026-08-04-p2b-broadcast-restyle.md`.
+
+P2c (motion/juice + animated map) and P2d (PWA install) remain.
 
 ## Production deployment: pending owner action
 

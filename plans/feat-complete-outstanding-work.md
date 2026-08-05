@@ -166,9 +166,9 @@ Column: `player_actions.pending_defense_credits integer not null default 0 check
 
 ## Execution Status (2026-08-04, branch feat/outstanding-work)
 
-- **Phase A: BUILT.** Keyed provider split, generation+single-flight+trailing-rerun loader, failure-counter LoadErrorScreen with pre-LeagueEntry branch order, ungated poll + focus refresh, per-user group storage (legacy key deleted), auth watchdog, arena exit affordance. Unit-tested: snapshot-retry, group-storage, off-turn blocking. Backlog rows 11/12 re-verified and struck. REMAINING: browser pass for the account-switch no-frame and error-screen ACs (pipeline browser step).
+- **Phase A: BUILT + BROWSER-VERIFIED (2026-08-05).** Keyed provider split, generation+single-flight+trailing-rerun loader, failure-counter LoadErrorScreen with pre-LeagueEntry branch order, ungated poll + focus refresh, per-user group storage (legacy key deleted), auth watchdog, arena exit affordance. Unit-tested: snapshot-retry, group-storage, off-turn blocking. Backlog rows 11/12 re-verified and struck. Playwright pass verified: LoadErrorScreen appears on the second failed poll tick (~21s) and Retry restores the map; a blocked `get_my_groups` renders the error screen and never LeagueEntry; sign-out → sign-in as another user renders zero frames with the previous user's chip/question/result/toast; storage keys are per-user-id and cleared on sign-out.
 - **Phase B: BUILT + DB-TESTED.** Off-turn dock/banner/sheet copy, cost-up-front labels, 0-5 pips, not-your-turn in blocked rules; migration 20260804230000 (defend-reroll cap, create_group revoke) with passing adversarial tests.
-- **Phase C: Tasks 2-11 BUILT** (helpers with amended contracts, question/result/auth/entry/lobby/overlays Broadcast restyle, season-complete panel, new-arrival dock, report dialog, focus refresh, message auto-clear, dead globals removed, override sheets verified clean). REMAINING: Task 12 touch-target audit + Task 13 click-through (pipeline browser step).
+- **Phase C: COMPLETE (Tasks 2-13).** Tasks 2-11 built (helpers with amended contracts, question/result/auth/entry/lobby/overlays Broadcast restyle, season-complete panel, new-arrival dock, report dialog, focus refresh, message auto-clear, dead globals removed, override sheets verified clean). Task 12 (2026-08-05): Playwright audit at 390/360px — zero horizontal overflow; eight undersized controls fixed to ≥44px; fixed `.advance` overlapping the header league button on narrow screens (missing mobile position override). Task 13 (2026-08-05): full click-through green — question flow with live timer, in-app report dialog (no native dialogs), action-aware result posters (timed-out defense gets defense-specific copy), danger dock, successful-defense poster, off-turn dock copy naming the turn holder, activity feed narrating attack/defense outcomes. NOT browser-verified (state-gated): season-complete panel (requires ending the seeded season) and join-mid-active-season empty state (requires a fresh signup).
 - **Phase D: BUILT.** Capacity-before-create + rollback deletes (DB-tested: full league mints zero accounts), CORS allowlist, generic errors + input caps, hardened workflow (no init --force, config assertion, edge deploy step, protected environment), config.toml [functions.test-signup] verify_jwt=true with the D3 gate documented, owner checklist rewritten in docs/HANDOFF.md. D4 throttle intentionally NOT built (ships only if the D3 check fails).
 - Suite at HEAD: 47 unit / 49 db / 1 smoke, typecheck/build/lint all green.
 
@@ -177,3 +177,15 @@ Column: `player_actions.pending_defense_credits integer not null default 0 check
 Five reviewers (TypeScript, security, migration integrity, simplicity, architecture) audited the implementation. All 6 P1 blockers and 4 P2s fixed in `363cc39`; findings and status live in `todos/`. Highlights: `retryLoad` no longer flashes the first-run screen; the timeout-submit retry actually resends; blocking precedence has one home (`isTerritoryActionBlocked` derives from `blockedReason`); snapshot freshness checks group identity; test-signup fails closed on CORS and rolls back on any throw.
 
 Browser pass verified auth, loading, map/HUD/pips, territory sheet (cost + blocked reason), standings and feed all in Broadcast with no app console errors. NOT verified: 390px touch-target audit (window resize unavailable in the automation environment), live question/result click-through, two-window account switch.
+
+## Browser pass 2 (2026-08-05, Playwright)
+
+All three previously-unverifiable items are now verified (see Execution
+Status above): 390/360px touch-target audit (commit `fix(design): touch
+targets and mobile overflow`), full question/result click-through including
+attack→defense both directions between commish/member, and the account
+switch with per-frame leak sampling. Suite after the pass: 48 unit / 49 db /
+1 smoke, typecheck/build/lint green (db suite needed the documented
+`docker restart supabase_kong_HomeTerritory` for the GoTrue flake; `test:db`
+requires the legacy JWT keys from `supabase status -o env` — the newer CLI
+hides them from the default status output).

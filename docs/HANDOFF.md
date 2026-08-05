@@ -49,7 +49,7 @@ Played two-window (commish@ + member@). Verdict: **decent game.** Two balance/tu
 ## How to resume
 
 - Local stack: `npm run stack:start` (started with `-x vector -x logflare`; `npm run stack:reset` for a clean board). API `http://127.0.0.1:55321` (ports +1000). Details: `docs/superpowers/local-stack.md`.
-- Legacy JWT keys are required for `test:db` and dev-vs-local (the `sb_*` keys 401). Get them from `supabase status`.
+- Legacy JWT keys are required for `test:db` and dev-vs-local (the `sb_*` keys 401). Get them from `supabase status -o env` (newer CLI versions hide them from the default `supabase status` output).
 - Run the app vs local stack: `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<anon> npm run dev`.
 - Seed accounts (local, password `playtest-password-1`): `commish@` / `member@` (group "Advance Demo League", 2 real humans — best for two-window play), plus `solo@`/`rival@` (group "Solo vs Bot" — name is historical; bots no longer exist). The old `seed-vs-bots*.mjs` scripts were deleted with the bot removal.
 - Playtest = **two browser windows** (one incognito), two real logins, drive both sides, "End turn" to pass. That is the intended mode: bots were removed 2026-08-04, so there is no solo mode.

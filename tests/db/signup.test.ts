@@ -117,3 +117,37 @@ test("signup cannot take over an existing unconfirmed account", async () => {
     "the attacker must not overwrite the victim's profile metadata",
   );
 });
+
+// Phase D1: the capacity check runs BEFORE account creation. A signup against
+// a full league used to mint a confirmed account (createUser at the top,
+// league-full check 33 lines later) and then strand it; now it must create
+// nothing at all.
+test("a full league mints zero accounts", async () => {
+  const inviteCode = await playtestLeague();
+  for (let seat = 0; seat < 7; seat += 1) {
+    const filled = await signup({
+      displayName: `Seat ${seat}`,
+      email: `${crypto.randomUUID()}@playtest.local`,
+      password: "playtest-password-1",
+      inviteCode,
+    });
+    assert.equal(filled.status, 200, filled.body.error ?? `seat ${seat} failed`);
+  }
+
+  const overflowEmail = `${crypto.randomUUID()}@playtest.local`;
+  const overflow = await signup({
+    displayName: "Ninth Wheel",
+    email: overflowEmail,
+    password: "playtest-password-1",
+    inviteCode,
+  });
+  assert.equal(overflow.status, 409);
+  assert.match(overflow.body.error ?? "", /full/i);
+
+  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  assert.equal(
+    (data?.users ?? []).some((candidate) => candidate.email?.toLowerCase() === overflowEmail),
+    false,
+    "a signup refused for capacity must not leave an account behind",
+  );
+});

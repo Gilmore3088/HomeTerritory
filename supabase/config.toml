@@ -398,3 +398,13 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # declarative_schema_path = "./declarative"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# test-signup handles unauthenticated signups but stays behind the platform
+# JWT gate: the browser invokes it via supabase.functions.invoke, which sends
+# the publishable/anon key as the bearer, and the gateway accepts project API
+# keys for verify_jwt. DECISION GATE (plan Phase D3): before going live,
+# verify a curl with only the publishable key passes the hosted gateway; only
+# if it is rejected may verify_jwt be set to false -- and then the throttle
+# design in plans/feat-complete-outstanding-work.md D4 ships with it.
+[functions.test-signup]
+verify_jwt = true

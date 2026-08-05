@@ -58,10 +58,13 @@ Played two-window (commish@ + member@). Verdict: **decent game.** Two balance/tu
 
 ## Deployment (owner action — needs YOUR credentials)
 
-Nothing is deployed; production DB is still on the pre-Phase-1 schema. To go live:
-1. In GitHub → Settings → Secrets and variables → Actions, add `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`.
-2. Re-run the **Deploy Supabase database** workflow (it auto-triggers on pushes to `supabase/migrations/**` but currently fails at auth because the secrets are unset). This applies the **15 staged migrations** (12 Phase-1 + 2 P2a + bot removal).
-3. Deploy the app to Vercel (import the repo, set env vars from `.env.example`, set `NEXT_PUBLIC_SITE_URL`), and configure Supabase Auth URLs.
+Nothing is deployed; production DB is still on the pre-Phase-1 schema. The deploy workflow is hardened (no `init --force`, edge-function deploy step, `environment: production`). To go live:
+1. In GitHub → Settings → Environments, create **production** (add yourself as required reviewer), and add secrets `SUPABASE_ACCESS_TOKEN` (from supabase.com/dashboard/account/tokens) and `SUPABASE_DB_PASSWORD` (project database settings).
+2. Before the first push: confirm the hosted project has no conflicting pre-Phase-1 objects (the initial migration is bare `create table`s — a name collision fails the push; wipe/repair the prod schema first if needed). Then run the **Deploy Supabase database** workflow; it applies every staged migration (count = `ls supabase/migrations | wc -l`) and deploys the `test-signup` edge function.
+3. **D3 gate:** verify signup works against the hosted gateway with only the publishable key (`curl -i -X POST https://<ref>.supabase.co/functions/v1/test-signup -H "Authorization: Bearer sb_publishable_..." ...`). If the gateway rejects it, revisit `verify_jwt` per `plans/feat-complete-outstanding-work.md` Phase D3/D4 — do NOT just flip it to false.
+4. Supabase dashboard: Auth Site URL = the Vercel domain, redirect wildcard for previews; confirm the email-confirmation setting matches local (`enable_confirmations = false`); create **publishable + secret keys** (use the real `sb_publishable_` key, not the legacy JWT).
+5. Vercel: import the repo; set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, and `CRON_SECRET` (≥32 random bytes, **Production environment only** — a preview must not be able to force day-advances). Also set `ALLOWED_ORIGINS` on the edge function (production + preview origins) via `supabase secrets set`.
+6. Post-deploy smoke (manual): sign up on a phone with a seed invite code → join → the map loads. Hobby-plan cron fires once daily within the scheduled hour — fine for the tick.
 
 ## Git state
 

@@ -121,3 +121,12 @@
 .loading{background:var(--paper);color:var(--ink)}
 .loading span{color:var(--muted)}
 .loadingOrb{border-color:var(--neutral);border-top-color:var(--mine)}
+
+/* P2b Task 12: 44px minimum touch targets (audited at 390/360px). */
+.segmented button{min-height:44px}
+.brandButton{min-height:44px}
+.frontRail button{min-height:44px;min-width:44px;justify-content:center}
+.missionDock>button{min-height:44px}
+.modalHeader button{width:44px;height:44px}
+.inviteStrip button{min-height:44px;padding:8px 14px}
+.sportGrid button{min-height:44px}

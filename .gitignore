@@ -13,3 +13,4 @@ CLAUDE.md
 tsconfig.tsbuildinfo
 package-lock.json
 .superpowers/
+tests/e2e/shots/

@@ -50,3 +50,7 @@ P4 strategy/meta, P5 go-live).
 |-------|------|--------|
 | P2b | Restore a refresh on window focus / visibilitychange (the P2a data-merge kept only the 20s poll + realtime; tab-refocus is slightly less snappy) | P2a final review |
 | P2b | Auto-clear the turn-banner `message` (the old 5s loop reset it; now the "X is up" line lingers until the next end-turn) — fold into the P2b turn-banner restyle | P2a final review |
+| P2 | Mid-season joiner's opening move is silently blocked while off-turn: the dock advertises "OPENING MOVE — Play question" but `data-territory-waiting` sets `pointer-events:none` on it with no explanation. Allow the home opening off-turn or give the dock a blocked-reason line. | 2026-08-05 audit F4 |
+| P2 | Small map states are untappable on phones: smallest paths are 4×6–30×24px at 390px, leader-line labels are `pointer-events:none`, no zoom, and SVG paths have no aria-labels. Needs hit-area padding, tappable labels, a state list, or map zoom. | 2026-08-05 audit F5 |
+| P4 | No out-of-app signal for the 24h defense window — a defender with the tab closed loses by timeout silently. PWA push (P2d) or email. | 2026-08-05 audit F7 |
+| P5 | `season_territories.owner_id → profiles` has no cascade/set-null, so a player who owns any state can never be deleted (verified live). Signup rollback is unaffected; real account deletion needs a path. | 2026-08-05 audit F8 |

@@ -171,3 +171,9 @@ Column: `player_actions.pending_defense_credits integer not null default 0 check
 - **Phase C: Tasks 2-11 BUILT** (helpers with amended contracts, question/result/auth/entry/lobby/overlays Broadcast restyle, season-complete panel, new-arrival dock, report dialog, focus refresh, message auto-clear, dead globals removed, override sheets verified clean). REMAINING: Task 12 touch-target audit + Task 13 click-through (pipeline browser step).
 - **Phase D: BUILT.** Capacity-before-create + rollback deletes (DB-tested: full league mints zero accounts), CORS allowlist, generic errors + input caps, hardened workflow (no init --force, config assertion, edge deploy step, protected environment), config.toml [functions.test-signup] verify_jwt=true with the D3 gate documented, owner checklist rewritten in docs/HANDOFF.md. D4 throttle intentionally NOT built (ships only if the D3 check fails).
 - Suite at HEAD: 47 unit / 49 db / 1 smoke, typecheck/build/lint all green.
+
+## Review + browser pass (2026-08-04)
+
+Five reviewers (TypeScript, security, migration integrity, simplicity, architecture) audited the implementation. All 6 P1 blockers and 4 P2s fixed in `363cc39`; findings and status live in `todos/`. Highlights: `retryLoad` no longer flashes the first-run screen; the timeout-submit retry actually resends; blocking precedence has one home (`isTerritoryActionBlocked` derives from `blockedReason`); snapshot freshness checks group identity; test-signup fails closed on CORS and rolls back on any throw.
+
+Browser pass verified auth, loading, map/HUD/pips, territory sheet (cost + blocked reason), standings and feed all in Broadcast with no app console errors. NOT verified: 390px touch-target audit (window resize unavailable in the automation environment), live question/result click-through, two-window account switch.

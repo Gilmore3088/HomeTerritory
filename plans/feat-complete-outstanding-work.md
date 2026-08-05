@@ -161,3 +161,13 @@ Column: `player_actions.pending_defense_credits integer not null default 0 check
 - Live SQL: `game_begin_action` + `game_submit_answer` → `20260803180700`/`20260803180900`; `refresh_player_actions` → `20260803180600`; `end_test_turn`/`group_snapshot`/`advance_season` → `20260804210000`; turn trigger → `20260730220000`; invite generator → `202607300728`; report voiding → `20260803180500`.
 - Auth: supabase-js#1594 (locks deadlock), @supabase/ssr cookie sessions, signOut scopes, react.dev Preserving-and-Resetting-State.
 - Deploy: Vercel CRON_SECRET convention + Hobby cron windows; Supabase managing-environments Actions pattern; new API keys migration; edge `verify_jwt` docs; `cf-connecting-ip` trust model.
+
+---
+
+## Execution Status (2026-08-04, branch feat/outstanding-work)
+
+- **Phase A: BUILT.** Keyed provider split, generation+single-flight+trailing-rerun loader, failure-counter LoadErrorScreen with pre-LeagueEntry branch order, ungated poll + focus refresh, per-user group storage (legacy key deleted), auth watchdog, arena exit affordance. Unit-tested: snapshot-retry, group-storage, off-turn blocking. Backlog rows 11/12 re-verified and struck. REMAINING: browser pass for the account-switch no-frame and error-screen ACs (pipeline browser step).
+- **Phase B: BUILT + DB-TESTED.** Off-turn dock/banner/sheet copy, cost-up-front labels, 0-5 pips, not-your-turn in blocked rules; migration 20260804230000 (defend-reroll cap, create_group revoke) with passing adversarial tests.
+- **Phase C: Tasks 2-11 BUILT** (helpers with amended contracts, question/result/auth/entry/lobby/overlays Broadcast restyle, season-complete panel, new-arrival dock, report dialog, focus refresh, message auto-clear, dead globals removed, override sheets verified clean). REMAINING: Task 12 touch-target audit + Task 13 click-through (pipeline browser step).
+- **Phase D: BUILT.** Capacity-before-create + rollback deletes (DB-tested: full league mints zero accounts), CORS allowlist, generic errors + input caps, hardened workflow (no init --force, config assertion, edge deploy step, protected environment), config.toml [functions.test-signup] verify_jwt=true with the D3 gate documented, owner checklist rewritten in docs/HANDOFF.md. D4 throttle intentionally NOT built (ships only if the D3 check fails).
+- Suite at HEAD: 47 unit / 49 db / 1 smoke, typecheck/build/lint all green.

@@ -9,6 +9,7 @@ import {
   MAP_LABELS,
   NEUTRAL,
   PATHS,
+  STATE_NAMES,
   memberColor,
 } from "@/lib/game-constants";
 import type { Member, Territory } from "@/lib/game-types";
@@ -59,13 +60,18 @@ export default function TerritoryMap({ territories, members, currentUser, select
           opacity={visible(state) ? 1 : 0.16}
           filter={selected === state ? "url(#state-shadow)" : undefined}
           onClick={() => onSelect(state)}
+          role="button"
+          aria-label={STATE_NAMES[state] ?? state}
         />
       ))}
       {territories.filter((territory) => territory.hold_level === 3 && visible(territory.id)).map((territory) => <path key={`${territory.id}-hatch`} d={PATHS[territory.id]} fill="url(#garrison-hatch)" pointerEvents="none" />)}
       {front && territories.filter((territory) => onFront(territory.id)).map((territory) => <path key={`${territory.id}-front`} d={PATHS[territory.id]} fill="none" stroke={INK} strokeWidth="3.2" pointerEvents="none" />)}
       {selected && <path d={PATHS[selected]} fill="none" stroke={DANGER} strokeWidth="4.5" pointerEvents="none" />}
-      {MAP_LABELS.map((state) => CENTROIDS[state] && <text key={`${state}-label`} x={CENTROIDS[state][0]} y={CENTROIDS[state][1] + 6} textAnchor="middle" className={styles.stateLabel} fill={territoryMap[state]?.owner_id || previewHome === state ? "white" : "rgba(20,32,52,.46)"} opacity={visible(state) ? 1 : .16}>{state}</text>)}
-      {Object.entries(LEADERS).map(([state, y]) => CENTROIDS[state] && <g key={`${state}-leader`} opacity={visible(state) ? 1 : .16} pointerEvents="none"><line x1={CENTROIDS[state][0]} y1={CENTROIDS[state][1]} x2="966" y2={y} stroke={INK} strokeWidth=".8" opacity=".36" /><text x="974" y={y + 6} className={styles.stateLabel} fill={INK}>{state}</text></g>)}
+      {/* Labels double as tap targets: the label itself selects its state, so a
+          state too small to hit (RI is 4x6px on a phone) still has a usable
+          proxy — its in-map label or its leader-line row on the right edge. */}
+      {MAP_LABELS.map((state) => CENTROIDS[state] && <text key={`${state}-label`} x={CENTROIDS[state][0]} y={CENTROIDS[state][1] + 6} textAnchor="middle" className={styles.stateLabel} pointerEvents="auto" cursor="pointer" onClick={() => onSelect(state)} fill={territoryMap[state]?.owner_id || previewHome === state ? "white" : "rgba(20,32,52,.46)"} opacity={visible(state) ? 1 : .16}>{state}</text>)}
+      {Object.entries(LEADERS).map(([state, y]) => CENTROIDS[state] && <g key={`${state}-leader`} opacity={visible(state) ? 1 : .16} onClick={() => onSelect(state)} cursor="pointer" role="button" aria-label={`Select ${STATE_NAMES[state] ?? state}`}><rect x="944" y={y - 13} width="86" height="26" fill="transparent" /><line x1={CENTROIDS[state][0]} y1={CENTROIDS[state][1]} x2="966" y2={y} stroke={INK} strokeWidth=".8" opacity=".36" pointerEvents="none" /><text x="974" y={y + 6} className={styles.stateLabel} pointerEvents="auto" fill={INK}>{state}</text></g>)}
     </svg>
   );
 }

@@ -143,7 +143,9 @@ function MissionDock({ snapshot, me, defense, homePending, isMyTurn, turnHolderN
     return <div className={`${styles.missionDock} ${styles.missionDanger}`}><div><span>UNDER ATTACK · {timeLeft(defense.defense_deadline)}</span><h2>Defend {STATE_NAMES[defense.territory_id]}</h2><p>One answer decides who owns it.</p></div><button disabled={busy} onClick={() => beginAction("defend", defense.territory_id, defense.id)}>Defend now</button></div>;
   }
   if (homePending && me?.home_state) {
-    return <div className={styles.missionDock}><div><span>OPENING MOVE</span><h2>Secure {STATE_NAMES[me.home_state]}</h2><p>Answer once to raise your starting garrison.</p></div><button disabled={busy} onClick={() => beginAction("home", me.home_state!)}>Play question</button></div>;
+    // missionHome exempts this dock from the off-turn waiting overlay: securing
+    // home ground is turn-exempt server-side (like defend) since 2026-08-05.
+    return <div className={`${styles.missionDock} ${styles.missionHome}`}><div><span>OPENING MOVE</span><h2>Secure {STATE_NAMES[me.home_state]}</h2><p>Answer once to raise your starting garrison.</p></div><button disabled={busy} onClick={() => beginAction("home", me.home_state!)}>Play question</button></div>;
   }
   // Off-turn players never had moves this rotation — saying "spent" would be
   // a lie. Name the turn holder and the one thing they CAN do.

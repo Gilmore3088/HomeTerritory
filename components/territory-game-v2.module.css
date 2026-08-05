@@ -130,3 +130,8 @@
 .modalHeader button{width:44px;height:44px}
 .inviteStrip button{min-height:44px;padding:8px 14px}
 .sportGrid button{min-height:44px}
+
+/* Marks the opening-move dock as exempt from the off-turn waiting overlay
+   (home securing is turn-exempt server-side, like defend). The custom property
+   is inert — an empty rule would be stripped and lose the class export. */
+.missionHome{--mission-home:1}

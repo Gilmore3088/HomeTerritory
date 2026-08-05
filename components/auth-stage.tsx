@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { edgeErrorMessage } from "@/lib/game-format";
 import { PATHS } from "@/lib/game-constants";
@@ -15,22 +15,33 @@ export default function AuthStage({ notify }: { notify: (text: string, error?: b
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const attemptRef = useRef(0);
+
+  // supabase-js queues auth calls behind a shared Web Lock; if another window
+  // is starving it the promise can hang. The watchdog frees the button so the
+  // player can retry instead of staring at "Working". The attempt counter
+  // makes a superseded attempt's late resolution a no-op.
+  async function signIn(): Promise<{ error: { message: string } | null } | null> {
+    const attempt = (attemptRef.current += 1);
+    const watchdog = window.setTimeout(() => {
+      if (attemptRef.current !== attempt) return;
+      setBusy(false);
+      notify("Sign-in is taking longer than expected. Check your connection and try again.", true);
+    }, 12_000);
+    const result = await supabase.auth.signInWithPassword({ email, password });
+    window.clearTimeout(watchdog);
+    if (attemptRef.current !== attempt) return null;
+    return result;
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     if (mode === "signin") {
-      // supabase-js queues auth calls behind a shared Web Lock; if another
-      // window is starving it the promise can hang. The watchdog frees the
-      // button so the player can retry instead of staring at "Working".
-      const watchdog = window.setTimeout(() => {
-        setBusy(false);
-        notify("Sign-in is taking longer than expected. Check your connection and try again.", true);
-      }, 12_000);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      window.clearTimeout(watchdog);
+      const result = await signIn();
+      if (!result) return;
       setBusy(false);
-      if (error) notify(error.message, true);
+      if (result.error) notify(result.error.message, true);
       return;
     }
 
@@ -48,10 +59,11 @@ export default function AuthStage({ notify }: { notify: (text: string, error?: b
       notify(payload.error ?? "Account creation failed.", true);
       return;
     }
-    const signIn = await supabase.auth.signInWithPassword({ email, password });
+    const signedIn = await signIn();
+    if (!signedIn) return;
     setBusy(false);
-    if (signIn.error) {
-      notify(`Account created, but sign-in failed: ${signIn.error.message}`, true);
+    if (signedIn.error) {
+      notify(`Account created, but sign-in failed: ${signedIn.error.message}`, true);
       return;
     }
     notify(payload.message ?? "Account created and joined.");

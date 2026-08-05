@@ -20,6 +20,10 @@ export default function QuestionArena({ operation, result, setOperation, setResu
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // "Try again" must re-send the answer that failed. After a timeout the card
+  // itself is unusable (clock at zero, empty box, auto-submit spent), so
+  // dismissing without resending would strand the player.
+  const lastSubmittedRef = useRef<string>("");
   const [seconds, setSeconds] = useState(0);
   const timedOut = useRef(false);
   const question = operation?.question;
@@ -72,6 +76,7 @@ export default function QuestionArena({ operation, result, setOperation, setResu
 
   async function submit(value = answer) {
     if (!operation || busy) return;
+    lastSubmittedRef.current = value;
     setBusy(true);
     const { data, error } = await supabase.rpc("game_submit_answer", { p_session_id: operation.session_id, p_answer: value });
     setBusy(false);
@@ -107,7 +112,7 @@ export default function QuestionArena({ operation, result, setOperation, setResu
           <span>PROBLEM</span>
           <h1>That answer didn&apos;t go through</h1>
           <p>{submitError}</p>
-          <button onClick={() => setSubmitError(null)}>Try again</button>
+          <button onClick={() => { setSubmitError(null); void submit(lastSubmittedRef.current); }}>Try again</button>
           <button onClick={() => { setSubmitError(null); setOperation(null); setResult(null); refresh(); }}>Return to map</button>
         </section>
       </main>

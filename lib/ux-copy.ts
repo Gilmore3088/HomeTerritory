@@ -35,24 +35,29 @@ export interface BlockedReasonInput {
   canTarget: boolean;
   isMyTurn: boolean;
   turnHolderName?: string | null;
-  onCooldown?: boolean;
-  alreadyFortifiedToday?: boolean;
   kind?: string;
 }
 
-// Precedence mirrors lib/game-rules.ts: contested > not-your-turn >
-// no-actions > cooldown > already-fortified > no-border > actionable.
+/** The one sentence every off-turn surface uses. */
+export function waitingCopy(turnHolderName?: string | null): string {
+  return `It's ${turnHolderName ?? "another player"}'s turn. You can defend if attacked.`;
+}
+
+export const NO_BORDER_COPY = "You don't share a border with this state.";
+
+// THE precedence ladder — lib/game-rules.ts's isTerritoryActionBlocked is
+// derived from this, so a disabled button and its caption cannot disagree.
+// Order: contested > not-your-turn > no-moves > no-border > actionable.
+// Defense never spends a move and is exempt from the turn gate.
 export function blockedReason(input: BlockedReasonInput): string | null {
   if (!input.hasAction) return null;
   if (input.contested) return "An attack is already active here.";
-  if (!input.isMyTurn) {
-    return `It's ${input.turnHolderName ?? "another player"}'s turn. You can defend if attacked.`;
-  }
-  if (input.actionsRemaining < 1) return "No moves left today.";
-  if (input.onCooldown) return "This state is cooling down after a missed claim.";
-  if (input.alreadyFortifiedToday && input.kind === "fortify") return "You already fortified this state today.";
+  const spendsMove = input.kind === undefined
+    || input.kind === "claim" || input.kind === "attack" || input.kind === "fortify";
+  if (spendsMove && !input.isMyTurn) return waitingCopy(input.turnHolderName);
+  if (spendsMove && input.actionsRemaining < 1) return "No moves left today.";
   if (!input.canTarget && (input.kind === "claim" || input.kind === "attack" || input.kind === undefined)) {
-    return "You don't share a border with this state.";
+    return NO_BORDER_COPY;
   }
   return null;
 }

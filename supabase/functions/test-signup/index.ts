@@ -5,14 +5,28 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // with a foreign Origin are refused outright (stops other pages crowdsourcing
 // their visitors' browsers at this endpoint); requests with no Origin (curl,
 // server-side) pass through and are governed by the platform gate instead.
+//
+// Two deliberate rules:
+//  - The localhost defaults apply ONLY when this function is running against a
+//    local stack. In production an unset ALLOWED_ORIGINS fails closed rather
+//    than quietly trusting anything a victim happens to run on port 3000.
+//  - Preview matching is opt-in via ALLOW_VERCEL_PREVIEWS, never on by
+//    default: *.vercel.app subdomains are first-come-first-served, so anyone
+//    can deploy "hometerritory-<x>" and claim an allowlisted origin.
 const DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"];
 const PREVIEW_ORIGIN = /^https:\/\/hometerritory-[a-z0-9-]+\.vercel\.app$/;
+
+function isLocalStack(): boolean {
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  return url.includes("localhost") || url.includes("127.0.0.1") || url.includes("kong:");
+}
 
 function allowedOrigin(origin: string | null): string | null {
   if (!origin) return null;
   const configured = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
-  const allowlist = configured.length ? configured : DEFAULT_DEV_ORIGINS;
-  if (allowlist.includes(origin) || PREVIEW_ORIGIN.test(origin)) return origin;
+  const allowlist = configured.length ? configured : (isLocalStack() ? DEFAULT_DEV_ORIGINS : []);
+  if (allowlist.includes(origin)) return origin;
+  if (Deno.env.get("ALLOW_VERCEL_PREVIEWS") === "true" && PREVIEW_ORIGIN.test(origin)) return origin;
   return null;
 }
 
@@ -58,11 +72,24 @@ Deno.serve(async (request: Request) => {
   })();
   if (!admin) return respond({ error: "Signup service is not configured." }, 500);
 
-  try {
-    const contentLength = Number(request.headers.get("content-length") ?? "0");
-    if (contentLength > MAX_BODY_BYTES) return respond({ error: "Request too large." }, 413);
+  // Tracked across the whole handler so even an unexpected throw cannot leave
+  // a confirmed account behind (a stranded account soft-bricks the address:
+  // signup says "already exists" and sign-in yields a user with no league).
+  let createdUserId: string | null = null;
 
-    const body = await request.json();
+  try {
+    // Measure the body we actually received: a missing, non-numeric, or
+    // chunked content-length would sail past a header-only check.
+    const raw = await request.text();
+    if (raw.length > MAX_BODY_BYTES) return respond({ error: "Request too large." }, 413);
+    let body: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(raw || "{}");
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("not an object");
+      body = parsed as Record<string, unknown>;
+    } catch {
+      return respond({ error: "Send a JSON object." }, 400);
+    }
     const displayName = String(body.displayName ?? "").replace(/\p{Cc}/gu, "").trim();
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
@@ -118,6 +145,7 @@ Deno.serve(async (request: Request) => {
 
     const user = created.user;
     if (!user) return internalError(respond, new Error("createUser returned no user"));
+    createdUserId = user.id;
 
     // Every failure past this point deletes the just-created account —
     // GoTrue and Postgres share no transaction, so the rollback is manual.
@@ -125,6 +153,13 @@ Deno.serve(async (request: Request) => {
     const rollback = async (cause: unknown): Promise<Response> => {
       const removal = await admin.auth.admin.deleteUser(user.id);
       if (removal.error) console.error("[signup rollback failed]", removal.error);
+      else createdUserId = null;
+      // A membership or home-state race (23505) is retriable, not a server
+      // fault: the league filled up between the capacity read and the insert.
+      const code = (cause as { code?: string } | null)?.code;
+      if (code === "23505") {
+        return respond({ error: "That league filled up while you were signing up. Try again." }, 409);
+      }
       return internalError(respond, cause);
     };
 
@@ -197,6 +232,7 @@ Deno.serve(async (request: Request) => {
       }
     }
 
+    createdUserId = null;
     return respond({
       ok: true,
       league: group.name,
@@ -206,6 +242,10 @@ Deno.serve(async (request: Request) => {
         : `You joined ${group.name}.`,
     });
   } catch (error) {
+    if (createdUserId) {
+      const removal = await admin.auth.admin.deleteUser(createdUserId);
+      if (removal.error) console.error("[signup rollback failed]", removal.error);
+    }
     return internalError(respond, error);
   }
 });

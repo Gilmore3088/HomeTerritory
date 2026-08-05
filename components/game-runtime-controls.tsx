@@ -80,13 +80,16 @@ export default function GameRuntimeControls() {
       p_reason: reportReason.trim() || "Player reported a possible question problem",
     });
     setBusy(null);
-    setReportOpen(false);
-    setReportReason("");
 
     if (error) {
+      // Keep the dialog open with the typed reason intact so the button is a
+      // real retry rather than a re-typing penalty.
       notify(`Could not report question: ${error.message}`, true);
       return;
     }
+
+    setReportOpen(false);
+    setReportReason("");
 
     // A question is only quarantined once three separate players report it, so
     // report_question is the one that knows which outcome the player just got.
@@ -127,9 +130,19 @@ export default function GameRuntimeControls() {
       )}
 
       {reportOpen && (
-        <div className={styles.reportScrim} onClick={() => setReportOpen(false)}>
-          <section className={styles.reportDialog} onClick={(event) => event.stopPropagation()}>
-            <h2>Report this question</h2>
+        <div
+          className={styles.reportScrim}
+          onClick={() => setReportOpen(false)}
+          onKeyDown={(event) => { if (event.key === "Escape") setReportOpen(false); }}
+        >
+          <section
+            className={styles.reportDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="report-dialog-title">Report this question</h2>
             <p>What is wrong with it?</p>
             <textarea
               value={reportReason}

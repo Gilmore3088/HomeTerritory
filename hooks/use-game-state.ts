@@ -25,6 +25,7 @@ export interface GameState {
   toast: ToastState | null;
   notify: (text: string, error?: boolean) => void;
   loadError: GameLoadError | null;
+  retrying: boolean;
   retryLoad: () => Promise<void>;
   loadGroups: (preferred?: string | null) => Promise<void>;
   loadSnapshot: (target?: string | null) => Promise<void>;
@@ -47,7 +48,9 @@ export function useGameState(session: Session | null): GameState {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [loadError, setLoadError] = useState<GameLoadError | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const beganAtRef = useRef<number | null>(null);
+  const groupIdRef = useRef<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   // Load generation: bumped on league switch so an in-flight response for the
   // previous league can never land on the new one.
@@ -59,6 +62,9 @@ export function useGameState(session: Session | null): GameState {
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
+  useEffect(() => {
+    groupIdRef.current = groupId;
+  }, [groupId]);
 
   const notify = useCallback((text: string, error = false) => {
     if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
@@ -72,7 +78,14 @@ export function useGameState(session: Session | null): GameState {
     if (error) {
       // A returning player must see a retryable error, never the first-run
       // league screen (creating a duplicate league is worse than waiting).
-      setLoadError({ source: "groups", message: error.message });
+      // A background refresh that fails over an already-loaded board stays a
+      // toast: evicting a working lobby to a full-screen error is worse than
+      // the stale data it replaces.
+      setGroups((current) => {
+        if (current.length === 0) setLoadError({ source: "groups", message: error.message });
+        else notify(error.message, true);
+        return current;
+      });
       return;
     }
     setLoadError((current) => (current?.source === "groups" ? null : current));
@@ -80,9 +93,13 @@ export function useGameState(session: Session | null): GameState {
     setGroups(rows);
     const saved = readSavedGroupId(userId);
     const next = pickActiveGroup(rows, saved, preferred);
+    // This is the second place the active group changes (selectGroup is the
+    // other); both must invalidate in-flight snapshots or a response for the
+    // previous league can land under the new one's identity.
+    generationRef.current += 1;
     setGroupId(next);
     if (next) writeSavedGroupId(userId, next);
-  }, [userId]);
+  }, [userId, notify]);
 
   const loadSnapshot = useCallback((target?: string | null): Promise<void> => {
     const id = target ?? groupId;
@@ -105,7 +122,9 @@ export function useGameState(session: Session | null): GameState {
           supabase.rpc("group_snapshot", { p_group_id: id }),
           supabase.rpc("get_my_active_session", { p_group_id: id }),
         ]);
-        if (isStaleLoad(generation, generationRef.current)) return;
+        // Freshness is generation AND group identity: a response for a league
+        // the player has since left must never render.
+        if (isStaleLoad(generation, generationRef.current) || id !== groupIdRef.current) return;
         if (snapshotResponse.error) {
           failCountRef.current += 1;
           if (shouldShowLoadError(failCountRef.current, snapshotRef.current !== null)) {
@@ -156,11 +175,19 @@ export function useGameState(session: Session | null): GameState {
     if (userId) writeSavedGroupId(userId, id);
   }, [userId]);
 
+  // loadError is NOT cleared up front: clearing it re-renders with no groups
+  // and no error, which is precisely the first-run LeagueEntry screen the
+  // branch order exists to keep a returning player away from. Both loaders
+  // clear it on success and re-set it on failure.
   const retryLoad = useCallback(async () => {
-    setLoadError(null);
+    setRetrying(true);
     failCountRef.current = 0;
-    if (loadError?.source === "groups") await loadGroups();
-    else await loadSnapshot();
+    try {
+      if (loadError?.source === "groups") await loadGroups();
+      else await loadSnapshot();
+    } finally {
+      setRetrying(false);
+    }
   }, [loadError, loadGroups, loadSnapshot]);
 
   // Both loaders write state only once their RPC has resolved, so each read is
@@ -272,6 +299,7 @@ export function useGameState(session: Session | null): GameState {
     toast,
     notify,
     loadError,
+    retrying,
     retryLoad,
     loadGroups,
     loadSnapshot,

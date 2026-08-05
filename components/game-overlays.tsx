@@ -9,7 +9,7 @@ export function Loading({ label }: { label: string }) {
   return <main className={styles.loading}><div className={styles.loadingOrb} /><span>{label}</span></main>;
 }
 
-export function LoadErrorScreen({ error, onRetry }: { error: GameLoadError; onRetry: () => void }) {
+export function LoadErrorScreen({ error, onRetry, retrying }: { error: GameLoadError; onRetry: () => void; retrying?: boolean }) {
   const heading = error.source === "groups" ? "Couldn't load your leagues" : "Couldn't sync the map";
   return (
     <main className={styles.loading}>
@@ -17,7 +17,9 @@ export function LoadErrorScreen({ error, onRetry }: { error: GameLoadError; onRe
         <span className={styles.kicker}>CONNECTION TROUBLE</span>
         <h1>{heading}</h1>
         <p>{error.message}</p>
-        <button className={styles.primaryButton} onClick={onRetry}>Retry</button>
+        <button className={styles.primaryButton} onClick={onRetry} disabled={retrying}>
+          {retrying ? "Retrying…" : "Retry"}
+        </button>
       </section>
     </main>
   );
@@ -32,7 +34,7 @@ export function FeedOverlay({ snapshot }: { snapshot: Snapshot }) {
   return <section className={styles.overlayPage}><div className={styles.overlayHeading}><span>LIVE LEAGUE</span><h1>Activity</h1><p>Every claim, attack and defense writes the story of the board.</p></div><div className={styles.feedList}>{snapshot.activity.length ? snapshot.activity.map((event) => <div key={event.id} className={styles.feedItem}><span>{event.territory_id ?? "•"}</span><div><strong>{event.message}</strong><small>{new Date(event.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small></div></div>) : <p className={styles.empty}>The map is quiet. The first correct answer changes that.</p>}</div></section>;
 }
 
-export function SeasonComplete({ snapshot }: { snapshot: Snapshot }) {
+export function SeasonComplete({ snapshot, onOpenLeagues }: { snapshot: Snapshot; onOpenLeagues?: () => void }) {
   const ranked = [...snapshot.scores].sort((a, b) => b.cumulative_score - a.cumulative_score || b.state_count - a.state_count);
   const winner = ranked[0];
   return (
@@ -41,6 +43,9 @@ export function SeasonComplete({ snapshot }: { snapshot: Snapshot }) {
         <span>FINAL WHISTLE</span>
         <h1>Season complete</h1>
         <p>{winner ? `${winner.display_name} takes the map with ${winner.cumulative_score} points.` : "The season has ended."}</p>
+        {onOpenLeagues && (
+          <button className={styles.primaryButton} onClick={onOpenLeagues}>Your other leagues</button>
+        )}
       </div>
       <div className={styles.rankingList}>
         {ranked.map((player, index) => (

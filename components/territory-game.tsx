@@ -31,6 +31,7 @@ export default function TerritoryGame() {
     toast,
     notify,
     loadError,
+    retrying,
     retryLoad,
     loadGroups,
     loadSnapshot,
@@ -46,7 +47,7 @@ export default function TerritoryGame() {
   // The error branch MUST precede the groups branch: a failed get_my_groups
   // for a returning player would otherwise render the first-run league screen
   // and invite a duplicate league.
-  if (loadError) return <LoadErrorScreen error={loadError} onRetry={() => void retryLoad()} />;
+  if (loadError) return <LoadErrorScreen error={loadError} onRetry={() => void retryLoad()} retrying={retrying} />;
   if (!groupId || groups.length === 0) {
     return <LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />;
   }
@@ -67,7 +68,19 @@ export default function TerritoryGame() {
   // An ended season used to fall through to a frozen GameShell; it gets a
   // proper closing screen now.
   if (snapshot.season && snapshot.season.status !== "active") {
-    return <SeasonComplete snapshot={snapshot} />;
+    return (
+      <>
+        {leaguePicker && (
+          <LeaguePicker
+            groups={groups}
+            active={groupId}
+            onPick={(id) => { selectGroup(id); setLeaguePicker(false); setSelected(null); setFront(null); setView("map"); }}
+            onClose={() => setLeaguePicker(false)}
+          />
+        )}
+        <SeasonComplete snapshot={snapshot} onOpenLeagues={groups.length > 1 ? () => setLeaguePicker(true) : undefined} />
+      </>
+    );
   }
   if (snapshot.group.status === "lobby" || !snapshot.season) {
     return (

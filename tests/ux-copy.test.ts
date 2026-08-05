@@ -47,11 +47,17 @@ test("blockedReason: no moves left", () => {
   assert.match(reason!, /no moves left/i);
 });
 
-test("blockedReason: cooldown, fortified-today and no-border in order", () => {
+test("blockedReason: no-border applies to offensive actions only", () => {
   const base = { hasAction: true, actionsRemaining: 2, contested: false, isMyTurn: true };
-  assert.match(blockedReason({ ...base, canTarget: true, onCooldown: true })!, /cooling down/i);
-  assert.match(blockedReason({ ...base, canTarget: true, alreadyFortifiedToday: true, kind: "fortify" })!, /already fortified/i);
   assert.match(blockedReason({ ...base, canTarget: false, kind: "attack" })!, /border/i);
+  assert.match(blockedReason({ ...base, canTarget: false, kind: "claim" })!, /border/i);
+  // Fortifying your own state needs no border.
+  assert.equal(blockedReason({ ...base, canTarget: false, kind: "fortify" }), null);
+});
+
+test("blockedReason: defense is exempt from the turn gate and the move pool", () => {
+  const offTurnBroke = { hasAction: true, actionsRemaining: 0, contested: false, canTarget: true, isMyTurn: false };
+  assert.equal(blockedReason({ ...offTurnBroke, kind: "defend" }), null);
 });
 
 test("blockedReason: an actionable state returns null", () => {

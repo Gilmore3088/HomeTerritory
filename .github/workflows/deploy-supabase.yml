@@ -36,8 +36,10 @@ jobs:
       # No `supabase init --force` here: it would overwrite the repo's
       # config.toml with defaults and silently drop settings like
       # [functions.test-signup]. The checked-in config IS the configuration.
+      # Asserts the VALUE, not just the block: flipping verify_jwt to false
+      # must not ship without the abuse controls the config comment demands.
       - name: Assert function config survived
-        run: grep -q "\[functions.test-signup\]" supabase/config.toml
+        run: grep -A1 '^\[functions\.test-signup\]' supabase/config.toml | grep -qx 'verify_jwt = true'
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1

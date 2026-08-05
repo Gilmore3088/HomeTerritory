@@ -13,3 +13,125 @@
 @media(max-width:860px){.authPage{grid-template-columns:1fr}.authBackdrop{inset:-5% -35% 42% -40%;opacity:.5}.authHero{align-self:start;padding:34px 24px 8px}.authHero h1{font-size:62px;margin:15px 0}.authHero p{font-size:16px}.logoMark{width:48px;height:48px}.authPanel{margin:10px 14px 20px;padding:24px;border-radius:26px}.lobbyPage{grid-template-columns:1fr;grid-template-rows:42dvh 1fr;overflow:auto}.lobbyMap{padding:10px}.lobbyMap svg{max-height:40dvh}.lobbySheet{position:relative;z-index:2;margin:-20px 10px 10px;border-radius:28px 28px 22px 22px;overflow:visible}.gameHeader{top:10px;left:10px;right:10px}.brandButton small{display:none}.profilePill div{display:none}.board{inset:0 0 72px}.mapSvg{width:1120px;max-width:none;max-height:none;transform:translate(-48%,-46%) scale(.72)}.hud{top:76px;left:10px;flex-direction:row}.hudMetric{width:62px;padding:9px 7px}.hudMetric strong{font-size:20px}.frontRail{top:128px;right:10px;max-height:40vh;overflow:auto}.frontRail button{padding:8px 10px;font-size:10px}.missionDock{bottom:12px;width:calc(100% - 20px);padding:15px;border-radius:21px}.missionDock h2{font-size:22px}.missionDock p{font-size:12px}.missionDock>button{padding:12px}.territorySheet{right:10px;left:10px;bottom:8px;width:auto;padding:14px 18px 18px;border-radius:25px}.sheetHandle{display:block;width:48px;height:5px;margin:0 auto 12px;border:0;border-radius:99px;background:var(--line)}.sheetTitle h2{font-size:31px}.bottomNav{bottom:8px}.bottomNav button{min-width:82px}.overlayPage{inset:0 0 72px;padding:95px 16px 30px}.answerGrid{grid-template-columns:1fr}.questionPage{padding:20px}.questionCard h1{font-size:37px}.questionPage header strong{font-size:19px}.timer{font-size:22px}.sportGrid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:460px){.authHero p{display:none}.authHero h1{font-size:53px}.authPanel{padding:20px}.lobbyHeader{padding:22px 20px 14px}.lobbyHeader h1{font-size:31px}.lobbyBody{padding:20px}.inviteStrip{margin:0 16px}.mapSvg{transform:translate(-48%,-48%) scale(.6)}.frontRail{display:none}.missionDock{grid-template-columns:1fr auto}.missionDock p{display:none}.profilePill{padding:7px}.bottomNav button{min-width:75px;padding:8px 9px}.questionCard h1{font-size:32px}}
 @media(prefers-reduced-motion:reduce){.app *,.authPage *,.entryPage *,.lobbyPage *,.questionPage *,.resultPage *,.loading *{animation:none!important;transition:none!important}}
+/* Load-error screen (Phase A): Broadcast-styled retry card rendered inside
+   the .loading shell when a loader fails repeatedly. */
+.loadErrorCard{display:flex;flex-direction:column;gap:14px;align-items:flex-start;max-width:420px;padding:28px;border:1px solid var(--line);border-radius:18px;background:var(--card,#fff);color:var(--ink)}
+.loadErrorCard h1{font-family:var(--font-display,inherit);font-size:1.6rem;line-height:1.1;margin:0}
+.loadErrorCard p{margin:0;color:var(--muted);overflow-wrap:anywhere}
+
+/* Action pips (Phase B): 0-5 moves visualised under the Actions HUD metric. */
+.hudPips{display:flex;gap:3px;margin-top:2px}
+.hudPips i{width:6px;height:6px;border-radius:50%;background:var(--neutral,#e7e3d8);border:1px solid var(--neutral-line,#c8c2b2)}
+.hudPips i.hudPipFilled{background:var(--mine,#1d6fe0);border-color:var(--mine-ink,#0a4fb0)}
+
+/* ---- P2b Task 3: question screen -> Broadcast light focus mode ---- */
+.questionPage{background:var(--paper);color:var(--ink)}
+.questionPage header span{color:var(--muted);letter-spacing:.14em}
+.questionPage header strong{color:var(--ink)}
+.questionState{color:rgba(17,17,17,.06);-webkit-text-stroke:0}
+.timer{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.timerDanger{background:var(--rival);color:#fff;border-color:var(--rival-ink,#a81f1c)}
+.timerTrack{position:relative;z-index:1;height:6px;margin-top:10px;border-radius:999px;background:var(--neutral);overflow:hidden}
+.timerFill{height:100%;border-radius:999px;background:var(--gold);transition:width .25s linear}
+.timerFillDanger{background:var(--rival)}
+.questionPage .questionCard{background:transparent}
+.questionPage .questionCard h1{color:var(--ink)}
+.questionPage .streak span{background:var(--neutral);border:1px solid var(--neutral-line,#c8c2b2)}
+.questionPage .streak .streakDone{background:var(--mine);border-color:var(--mine-ink,#0a4fb0)}
+.questionPage .answerGrid button{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.questionPage .answerGrid button:hover{border-color:var(--ink)}
+.questionPage .answerGrid .answerSelected{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.questionPage .freeAnswer{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.questionPage .lockButton{background:var(--dock);color:#fff}
+.questionPage .lockButton:disabled{opacity:.4}
+
+/* ---- P2b Task 4: result screen -> Broadcast poster ---- */
+.resultPage{color:#fff}
+.resultSuccess{background:var(--mine)}
+.resultFailure{background:var(--rival)}
+.resultPage .resultHalo{opacity:.25}
+.resultPage section span{color:rgba(255,255,255,.75);letter-spacing:.16em}
+.resultPage section h1{color:#fff}
+.resultPage section p{color:rgba(255,255,255,.92)}
+.resultPage section small{color:rgba(255,255,255,.8)}
+.resultPage section button{background:#111;color:#fff;border:2px solid #111}
+.resultPage section button:hover{background:#fff;color:#111}
+
+/* ---- P2b Task 5: auth/landing -> Broadcast ---- */
+.authPage{background:var(--paper);color:var(--ink)}
+.authHero .kicker{color:var(--muted)}
+.authHero h1{color:var(--ink)}
+.authHero p{color:var(--muted)}
+.authPage .logoMark{background:var(--dock);color:#fff}
+.authPanel{background:var(--card);border:1px solid var(--line);color:var(--ink);box-shadow:0 18px 50px rgba(17,17,17,.08)}
+.authPanel .segmented{background:var(--paper-2,#f0ece0)}
+.authPanel .segmented button{color:var(--muted)}
+.authPanel .segmented .segmentActive{background:var(--dock);color:#fff}
+.authPanel .form label span{color:var(--muted)}
+.authPanel .form input{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.authPanel .form input:focus{border-color:var(--ink)}
+.authPanel .confirmNote{background:var(--paper-2,#f0ece0);color:var(--ink);border:1px solid var(--line)}
+.authPanel .primaryButton{background:var(--rival);color:#fff;border:0}
+
+/* ---- P2b Task 6: league entry + lobby + picker -> Broadcast ---- */
+.entryPage{background:var(--paper);color:var(--ink)}
+.entryPanel{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.entryPanel h1{color:var(--ink)}
+.entryWelcome{margin:0;color:var(--muted);max-width:44ch}
+.entryPanel .segmented{background:var(--paper-2,#f0ece0)}
+.entryPanel .segmented .segmentActive{background:var(--dock);color:#fff}
+.entryPanel .form input{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.entryPanel .sportGrid button{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.entryPanel .sportGrid .sportActive{background:var(--mine);color:#fff;border-color:var(--mine-ink,#0a4fb0)}
+.entryPanel .primaryButton{background:var(--dock);color:#fff}
+.entryPanel .textButton{color:var(--muted)}
+.lobbyPage{background:var(--paper);color:var(--ink)}
+.lobbySheet{background:var(--card);border-top:1px solid var(--line);color:var(--ink)}
+.lobbyHeader h1{color:var(--ink)}
+.lobbyHeader select{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.inviteStrip{background:var(--dock);color:#fff}
+.inviteStrip span{color:rgba(255,255,255,.65)}
+.inviteStrip strong{color:var(--gold);letter-spacing:.12em}
+.inviteStrip button{background:rgba(255,255,255,.14);color:#fff;border:0}
+.homeChoice h2{color:var(--ink)}
+.homeChoice p{color:var(--muted)}
+.homeChoice select{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.playerRail .playerAvatar strong{color:var(--ink)}
+.playerRail .playerAvatar small{color:var(--muted)}
+.lobbyPage .startButton{background:var(--rival);color:#fff;border:0}
+.lobbyPage .textButton{color:var(--muted)}
+.leagueModal{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.leagueModal .modalHeader h2{color:var(--ink)}
+.leagueOption{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
+.leagueOption small{color:var(--muted)}
+.leagueOptionActive{border-color:var(--ink)}
+
+/* ---- P2b Task 7: standings + feed + loading -> Broadcast ---- */
+.overlayPage{background:var(--paper);color:var(--ink)}
+.overlayHeading span{color:var(--muted);letter-spacing:.14em}
+.overlayHeading h1{color:var(--ink)}
+.overlayHeading p{color:var(--muted)}
+.rankingRow{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.rankNumber{color:var(--muted)}
+.rankingRow small{color:var(--muted)}
+.feedItem{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.feedItem small{color:var(--muted)}
+.feedItem span{color:var(--muted)}
+.empty{color:var(--muted)}
+.loading{background:var(--paper);color:var(--ink)}
+.loading span{color:var(--muted)}
+.loadingOrb{border-color:var(--neutral);border-top-color:var(--mine)}
+
+/* P2b Task 12: 44px minimum touch targets (audited at 390/360px). */
+.segmented button{min-height:44px}
+.brandButton{min-height:44px}
+.frontRail button{min-height:44px;min-width:44px;justify-content:center}
+.missionDock>button{min-height:44px}
+.modalHeader button{width:44px;height:44px}
+.inviteStrip button{min-height:44px;padding:8px 14px}
+.sportGrid button{min-height:44px}
+
+/* Marks the opening-move dock as exempt from the off-turn waiting overlay
+   (home securing is turn-exempt server-side, like defend). The custom property
+   is inert — an empty rule would be stripped and lose the class export. */
+.missionHome{--mission-home:1}

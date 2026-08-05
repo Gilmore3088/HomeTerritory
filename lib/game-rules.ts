@@ -1,3 +1,5 @@
+import { blockedReason } from "./ux-copy.ts";
+
 export type HoldLevel = 1 | 2 | 3;
 
 export function requiredCorrectForSteal(
@@ -43,15 +45,25 @@ export function actionRequiresBorder(kind: string): boolean {
   return kind === "claim" || kind === "attack";
 }
 
+// Blocking precedence lives in ONE place: lib/ux-copy.ts's blockedReason
+// decides both whether an action is blocked and how to say so. Keeping a
+// second ladder here is what lets a disabled button contradict its own
+// caption, so this predicate is derived, never re-implemented.
 export function isTerritoryActionBlocked(input: {
   kind: string;
   contested: boolean;
   sharesBorder: boolean;
   actionsRemaining: number;
+  isMyTurn?: boolean;
 }): boolean {
-  if (input.contested) return true;
-  if (actionRequiresBorder(input.kind) && !input.sharesBorder) return true;
-  return actionSpendsMove(input.kind) && input.actionsRemaining < 1;
+  return blockedReason({
+    hasAction: true,
+    kind: input.kind,
+    contested: input.contested,
+    canTarget: input.sharesBorder,
+    actionsRemaining: input.actionsRemaining,
+    isMyTurn: input.isMyTurn ?? true,
+  }) !== null;
 }
 
 export function refreshedActions(input: {

@@ -103,3 +103,14 @@ test("a contested state blocks every action, and defense never spends a move", (
     false,
   );
 });
+
+test("off-turn players are blocked from move-spending actions but never from defending", () => {
+  const base = { contested: false, sharesBorder: true, actionsRemaining: 3 };
+  assert.equal(isTerritoryActionBlocked({ kind: "claim", ...base, isMyTurn: false }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "attack", ...base, isMyTurn: false }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "fortify", ...base, isMyTurn: false }), true);
+  assert.equal(isTerritoryActionBlocked({ kind: "defend", ...base, isMyTurn: false }), false);
+  assert.equal(isTerritoryActionBlocked({ kind: "claim", ...base, isMyTurn: true }), false);
+  // Omitting the flag (non-test leagues) keeps the old behavior.
+  assert.equal(isTerritoryActionBlocked({ kind: "claim", ...base }), false);
+});

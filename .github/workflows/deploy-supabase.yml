@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - "supabase/migrations/**"
+      - "supabase/functions/**"
+      - "supabase/config.toml"
       - ".github/workflows/deploy-supabase.yml"
 
 permissions:
@@ -19,6 +21,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Secrets live in this GitHub environment (with required reviewers) so a
+    # merged PR cannot push schema to production unattended.
+    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -28,13 +33,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # No `supabase init --force` here: it would overwrite the repo's
+      # config.toml with defaults and silently drop settings like
+      # [functions.test-signup]. The checked-in config IS the configuration.
+      # Asserts the VALUE, not just the block: flipping verify_jwt to false
+      # must not ship without the abuse controls the config comment demands.
+      - name: Assert function config survived
+        run: grep -A1 '^\[functions\.test-signup\]' supabase/config.toml | grep -qx 'verify_jwt = true'
+
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
-
-      - name: Initialize CLI configuration
-        run: supabase init --force
 
       - name: Link production project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
@@ -44,6 +54,9 @@ jobs:
 
       - name: Apply pending migrations
         run: supabase db push
+
+      - name: Deploy edge functions
+        run: supabase functions deploy test-signup --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Show migration status
         run: supabase migration list

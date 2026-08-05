@@ -10,7 +10,7 @@ import LeagueEntry from "./league-entry";
 import LobbyStage from "./lobby-stage";
 import GameShell from "./game-shell";
 import QuestionArena from "./question-arena";
-import { LeaguePicker, Loading } from "./game-overlays";
+import { LeaguePicker, Loading, LoadErrorScreen, SeasonComplete } from "./game-overlays";
 
 const supabase = createClient();
 
@@ -20,7 +20,7 @@ export default function TerritoryGame() {
     authReady,
     groups,
     groupId,
-    setGroupId,
+    selectGroup,
     snapshot,
     operation,
     setOperation,
@@ -30,6 +30,9 @@ export default function TerritoryGame() {
     setBusy,
     toast,
     notify,
+    loadError,
+    retrying,
+    retryLoad,
     loadGroups,
     loadSnapshot,
     beginAction,
@@ -39,10 +42,22 @@ export default function TerritoryGame() {
   const [front, setFront] = useState<string | null>(null);
   const [leaguePicker, setLeaguePicker] = useState(false);
 
+  // The toast must render on every surface that calls notify — the auth,
+  // league-entry and lobby branches return before the game shell, which
+  // otherwise swallows their errors (bad password, duplicate email, full
+  // league) without a trace.
+  const toastEl = toast
+    ? <div className={`${styles.toast} ${toast.error ? styles.toastError : ""}`}>{toast.text}</div>
+    : null;
+
   if (!authReady) return <Loading label="Loading the battlefield" />;
-  if (!session) return <AuthStage notify={notify} />;
+  if (!session) return <><AuthStage notify={notify} />{toastEl}</>;
+  // The error branch MUST precede the groups branch: a failed get_my_groups
+  // for a returning player would otherwise render the first-run league screen
+  // and invite a duplicate league.
+  if (loadError) return <LoadErrorScreen error={loadError} onRetry={() => void retryLoad()} retrying={retrying} />;
   if (!groupId || groups.length === 0) {
-    return <LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />;
+    return <><LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />{toastEl}</>;
   }
   if (!snapshot) return <Loading label="Syncing the map" />;
   if (operation || result) {
@@ -53,36 +68,54 @@ export default function TerritoryGame() {
         setOperation={setOperation}
         setResult={setResult}
         refresh={() => loadSnapshot()}
-        notify={notify}
       />
     );
   }
 
   const me = snapshot.members.find((member) => member.user_id === snapshot.current_user_id);
+  // An ended season used to fall through to a frozen GameShell; it gets a
+  // proper closing screen now.
+  if (snapshot.season && snapshot.season.status !== "active") {
+    return (
+      <>
+        {leaguePicker && (
+          <LeaguePicker
+            groups={groups}
+            active={groupId}
+            onPick={(id) => { selectGroup(id); setLeaguePicker(false); setSelected(null); setFront(null); setView("map"); }}
+            onClose={() => setLeaguePicker(false)}
+          />
+        )}
+        <SeasonComplete snapshot={snapshot} onOpenLeagues={groups.length > 1 ? () => setLeaguePicker(true) : undefined} />
+      </>
+    );
+  }
   if (snapshot.group.status === "lobby" || !snapshot.season) {
     return (
-      <LobbyStage
-        snapshot={snapshot}
-        groups={groups}
-        groupId={groupId}
-        setGroupId={setGroupId}
-        refresh={() => loadSnapshot()}
-        reloadGroups={() => loadGroups()}
-        notify={notify}
-      />
+      <>
+        <LobbyStage
+          snapshot={snapshot}
+          groups={groups}
+          groupId={groupId}
+          setGroupId={selectGroup}
+          refresh={() => loadSnapshot()}
+          reloadGroups={() => loadGroups()}
+          notify={notify}
+        />
+        {toastEl}
+      </>
     );
   }
 
   return (
     <main className={styles.app}>
-      {toast && <div className={`${styles.toast} ${toast.error ? styles.toastError : ""}`}>{toast.text}</div>}
+      {toastEl}
       {leaguePicker && (
         <LeaguePicker
           groups={groups}
           active={groupId}
           onPick={(id) => {
-            setGroupId(id);
-            window.localStorage.setItem("territory_group", id);
+            selectGroup(id);
             setLeaguePicker(false);
             setSelected(null);
             setFront(null);

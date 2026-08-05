@@ -100,5 +100,9 @@ export interface ResultState {
   correctAnswer?: string | null;
 }
 export interface ToastState { text: string; error?: boolean }
+export interface GameLoadError {
+  source: "groups" | "snapshot";
+  message: string;
+}
 
 export type View = "map" | "standings" | "feed";

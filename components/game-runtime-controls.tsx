@@ -10,7 +10,7 @@ const supabase = createClient();
 const DEFAULT_REPORT_REASON = "The question may be inaccurate, ambiguous, duplicated, or mismatched to its difficulty.";
 
 export default function GameRuntimeControls() {
-  const { session, snapshot, operation, notify, loadSnapshot, advanceGroupDay } = useGameData();
+  const { session, snapshot, operation, result, notify, loadSnapshot, advanceGroupDay } = useGameData();
   const [busy, setBusy] = useState<"turn" | "logout" | "report" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -111,13 +111,21 @@ export default function GameRuntimeControls() {
 
   if (!session) return null;
 
+  // The arena (question or result poster) is a full-screen takeover with its
+  // own exits — game chrome floating over it reads as a glitch. Same for a
+  // finished season, where only Log out still makes sense.
+  const arenaActive = Boolean(operation || result);
+  const seasonActive = snapshot?.season?.status === "active";
+
   return (
     <>
-      <button type="button" className={styles.logout} onClick={logout} disabled={Boolean(busy)}>
-        {busy === "logout" ? "Signing out…" : "Log out"}
-      </button>
+      {!arenaActive && (
+        <button type="button" className={styles.logout} onClick={logout} disabled={Boolean(busy)}>
+          {busy === "logout" ? "Signing out…" : "Log out"}
+        </button>
+      )}
 
-      {isCommissioner && snapshot?.season && (
+      {isCommissioner && snapshot?.season && seasonActive && !arenaActive && (
         <button type="button" className={styles.advance} onClick={() => advanceGroupDay()} disabled={Boolean(busy)}>
           Advance the day
         </button>
@@ -160,7 +168,7 @@ export default function GameRuntimeControls() {
         </div>
       )}
 
-      {state?.testMode && !state.activeAttemptId && (
+      {state?.testMode && !arenaActive && seasonActive && (
         <aside className={`${styles.turn} ${state.isMyTurn ? styles.yourTurn : styles.waiting}`} aria-live="polite">
           <div>
             <span>TURN {state.turnNumber}</span>

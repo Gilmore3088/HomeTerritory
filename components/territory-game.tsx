@@ -42,14 +42,22 @@ export default function TerritoryGame() {
   const [front, setFront] = useState<string | null>(null);
   const [leaguePicker, setLeaguePicker] = useState(false);
 
+  // The toast must render on every surface that calls notify — the auth,
+  // league-entry and lobby branches return before the game shell, which
+  // otherwise swallows their errors (bad password, duplicate email, full
+  // league) without a trace.
+  const toastEl = toast
+    ? <div className={`${styles.toast} ${toast.error ? styles.toastError : ""}`}>{toast.text}</div>
+    : null;
+
   if (!authReady) return <Loading label="Loading the battlefield" />;
-  if (!session) return <AuthStage notify={notify} />;
+  if (!session) return <><AuthStage notify={notify} />{toastEl}</>;
   // The error branch MUST precede the groups branch: a failed get_my_groups
   // for a returning player would otherwise render the first-run league screen
   // and invite a duplicate league.
   if (loadError) return <LoadErrorScreen error={loadError} onRetry={() => void retryLoad()} retrying={retrying} />;
   if (!groupId || groups.length === 0) {
-    return <LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />;
+    return <><LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />{toastEl}</>;
   }
   if (!snapshot) return <Loading label="Syncing the map" />;
   if (operation || result) {
@@ -84,21 +92,24 @@ export default function TerritoryGame() {
   }
   if (snapshot.group.status === "lobby" || !snapshot.season) {
     return (
-      <LobbyStage
-        snapshot={snapshot}
-        groups={groups}
-        groupId={groupId}
-        setGroupId={selectGroup}
-        refresh={() => loadSnapshot()}
-        reloadGroups={() => loadGroups()}
-        notify={notify}
-      />
+      <>
+        <LobbyStage
+          snapshot={snapshot}
+          groups={groups}
+          groupId={groupId}
+          setGroupId={selectGroup}
+          refresh={() => loadSnapshot()}
+          reloadGroups={() => loadGroups()}
+          notify={notify}
+        />
+        {toastEl}
+      </>
     );
   }
 
   return (
     <main className={styles.app}>
-      {toast && <div className={`${styles.toast} ${toast.error ? styles.toastError : ""}`}>{toast.text}</div>}
+      {toastEl}
       {leaguePicker && (
         <LeaguePicker
           groups={groups}

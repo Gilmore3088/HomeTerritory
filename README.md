@@ -7,7 +7,9 @@ This repository is not a static mockup. The application uses shared Supabase sta
 ## What works
 
 - Email/password signup and sign-in through Supabase Auth
-- Create a private group and select sports and season length
+- Create a private group and choose sports, season length (7–60 days),
+  opening mode (open map or fully dealt), board scope (50 states or lower 48),
+  difficulty, and the league's timezone
 - Join a group with an eight-character invite code
 - Two-player minimum and commissioner-controlled season start
 - Interactive 50-state map
@@ -20,8 +22,14 @@ This repository is not a static mockup. The application uses shared Supabase sta
 - Shared cumulative scoring with region, coast-to-coast and sport-diversity
   bonuses, leaderboard, and activity feed
 - Supabase Realtime subscriptions so multiple phones update from the same database
-- One-tap question reporting with an immediate action refund; a question is
-  quarantined once three separate players report it
+- One-tap question reporting through an in-app dialog with an immediate
+  action refund; a question is quarantined once three separate players report
+  it, and a service-role `reactivate_question` RPC can undo a quarantine
+- Commissioner "Advance the day" fast-forward: each tap settles or advances a
+  full game day (scoring, action refresh, fortify windows, season end all
+  follow the shifted calendar)
+- Installable PWA (registered service worker + manifest) with opt-in web-push
+  defense alerts when VAPID keys are configured
 - Vercel Cron endpoint for scoring and expired-session cleanup
 
 ## Architecture
@@ -78,6 +86,11 @@ CRON_SECRET=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+Web-push defense alerts are optional: generate a key pair with
+`npx web-push generate-vapid-keys` and set `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
+`VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`. Leave them blank to ship without
+push — the in-app alerts button hides itself.
+
 ## Run locally
 
 ```bash
@@ -105,13 +118,13 @@ To test the real multiplayer flow, create two accounts using two email addresses
 6. In Supabase **Authentication → URL Configuration**, set the production site URL and add the Vercel authentication callback URLs.
 
 `vercel.json` runs the daily tick at 08:05 UTC. Each league's day boundary
-comes from its own `groups.timezone`, so the tick scores whichever leagues
-have crossed local midnight by then; nothing writes that column yet, so every
-league currently uses its `America/Los_Angeles` default.
+comes from its own `groups.timezone`, chosen at league creation (the form
+detects the browser's zone), so the tick scores whichever leagues have
+crossed local midnight by then.
 
 ## Starter question bank
 
-The migration creates 550 starter questions—11 per state—so claims, attacks, and defenses can be tested without runtime AI generation. They prove the game pipeline but are marked `starter_seed`, not production-validated. A production rollout should replace or augment them with the structured generation and external validation pipeline described in the PRD.
+The migrations seed 550 starter questions—11 per state—so claims, attacks, and defenses can be tested without runtime AI generation. The original single-subject-per-state bank (`starter_seed`) is deactivated in favor of a diversified bank (`starter_seed_v2`): every state mixes teams, players, venues and events with distinct answers, so seeing one question no longer reveals a state's whole bank. It is still starter content, not production-validated; a production rollout should replace or augment it with the structured generation and external validation pipeline described in the PRD.
 
 ## Security notes
 
@@ -121,16 +134,20 @@ The migration creates 550 starter questions—11 per state—so claims, attacks,
 - Internal attack-resolution functions have public execution revoked.
 - The daily tick requires the server secret key and a separate cron secret.
 - `SUPABASE_SECRET_KEY` is accepted by the server. `SUPABASE_SERVICE_ROLE_KEY` remains a temporary compatibility fallback only.
+- The `test-signup` edge function scopes its CORS to the `ALLOWED_ORIGINS`
+  secret (comma-separated, `https://*.host` preview wildcards); unset keeps
+  the permissive default for local stacks.
+- The push notify route re-verifies every attack server-side and claims it
+  atomically, so a spoofed client call cannot notify anyone or double-send.
 
 ## Current intentional MVP limits
 
-- No web-push notifications yet; the in-app defense alert and realtime update are implemented first.
-- No AI generation worker or external sports-reference validation worker yet.
-- No installable PWA yet: `public/sw.js` and `public/manifest.webmanifest` ship
-  but nothing registers them.
-- Leagues cannot choose a timezone yet, so every one of them scores on the
-  `America/Los_Angeles` default.
-- The starter bank uses repeated factual subjects in different question forms to guarantee enough test inventory.
+- No AI generation worker or external sports-reference validation worker yet;
+  the diversified starter bank is hand-written, not externally validated.
+- Web-push covers the defense alert only (sent when an attack lands); there
+  are no turn or daily-recap notifications yet.
+- Question moderation has quarantine and a service-role reactivation RPC, but
+  no reviewer UI or queue.
 
 ## Verification
 
@@ -141,8 +158,10 @@ npm run build
 npm run lint
 ```
 
-The GitHub Actions CI workflow runs the first three on pull requests.
+The GitHub Actions CI workflow runs the first three on pull requests, and a
+second `engine` job boots the Supabase CLI stack to run `npm run test:db` and
+`npm run test:smoke` on every push and pull request.
 
-`npm run test:db` drives the real engine functions and needs a running local
-stack plus `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` and
+Locally, `npm run test:db` drives the real engine functions and needs a
+running local stack plus `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` and
 `SUPABASE_TEST_SERVICE_KEY`; see `docs/superpowers/local-stack.md`.

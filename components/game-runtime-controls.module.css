@@ -1,6 +1,7 @@
 .logout,
 .report,
-.advance {
+.advance,
+.alerts {
   position: fixed;
   z-index: 180;
   min-height: 38px;
@@ -25,6 +26,12 @@
   padding: 0 13px;
 }
 
+.alerts {
+  top: 22px;
+  right: 400px;
+  padding: 0 13px;
+}
+
 .report {
   top: 22px;
   left: 22px;
@@ -37,9 +44,79 @@
 
 .logout:disabled,
 .report:disabled,
+.alerts:disabled,
 .turn button:disabled {
   opacity: 0.5;
   cursor: wait;
+}
+
+.reportScrim {
+  position: fixed;
+  z-index: 260;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.45);
+}
+
+.reportDialog {
+  width: min(440px, 100%);
+  padding: 20px;
+  border: 1px solid rgba(19, 34, 56, 0.14);
+  border-radius: 18px;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 24px 64px rgba(17, 17, 17, 0.28);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.reportDialog h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.reportDialog p {
+  margin: 0 0 12px;
+  color: rgba(17, 17, 17, 0.6);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.reportDialog textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(19, 34, 56, 0.2);
+  border-radius: 12px;
+  background: #faf7ef;
+  color: #111;
+  font: 600 13px/1.4 Inter, ui-sans-serif, system-ui, sans-serif;
+  resize: vertical;
+}
+
+.reportActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.reportActions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(19, 34, 56, 0.2);
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font: 800 13px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.reportSubmit {
+  border-color: #111 !important;
+  background: #111 !important;
+  color: #fff !important;
 }
 
 .turn {
@@ -143,6 +220,16 @@
     left: 14px;
     min-height: 36px;
     border-radius: 12px;
+    font-size: 11px;
+  }
+
+  .alerts {
+    top: calc(13px + env(safe-area-inset-top));
+    right: 132px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 12px;
+    box-shadow: none;
     font-size: 11px;
   }
 

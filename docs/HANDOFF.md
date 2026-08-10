@@ -13,6 +13,20 @@ Territory is an async, private-group **sports-trivia + territory-war** game (Nex
 - **Phase 2a — Foundation.** Merged the dual-polling data layer into one `GameDataProvider` context; fixed the stale-question bug (race-guarded); extracted `advance_season` from `run_daily_tick`; added a commissioner-gated `advance_group_day` ("Advance the day" control). Spec: `docs/superpowers/specs/2026-08-04-p2a-foundation-design.md`.
 - Test suite at `main` HEAD: **32 unit / 41 DB / 1 smoke**, typecheck / build / lint all green.
 
+## 2026-08-10 update: gap-closing wave landed on `claude/system-incomplete-features-coeb40`
+
+A full sweep closed every open incomplete feature: P2b Tasks 2–13 (Broadcast
+on all screens, timeout copy, blocked reasons, in-app report dialog, focus
+refresh, banner auto-clear), the login/session unstick (auth watchdog +
+groups-ready gate), league options + timezone exposed, the game-day
+fast-forward (`groups.day_offset`), region-bonus and exhaustion-fallback
+fixes, the v1 grant revoke, question reactivation, PWA wiring, web-push
+defense alerts, a diversified 550-question `starter_seed_v2` bank, DB+smoke
+suites in CI, and scoped `test-signup` CORS. `IMPLEMENTATION_STATUS.md` has
+the full list; the balance ruling (defense was already free — legibility
+fixed, not the economy) is recorded there too. The sections below are the
+pre-wave history.
+
 ## In progress — Phase 2b (Broadcast visual redesign)
 
 Branch: **`feat/p2b-broadcast`** (NOT merged, NOT pushed).

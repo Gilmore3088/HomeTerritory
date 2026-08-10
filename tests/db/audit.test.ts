@@ -1050,7 +1050,7 @@ test("no security-definer function in public is authenticated-executable outside
     // components/league-entry.tsx: joining a league by invite code.
     "join_group(p_invite_code text)",
     // components/league-entry.tsx: creating a league (the current, v2 shape).
-    "create_group_v2(p_name text, p_sports text[], p_season_length integer, p_opening_mode text, p_board_scope text, p_difficulty text, p_test_mode boolean)",
+    "create_group_v2(p_name text, p_sports text[], p_season_length integer, p_opening_mode text, p_board_scope text, p_difficulty text, p_test_mode boolean, p_timezone text)",
     // components/lobby-stage.tsx: picking a home state in the lobby.
     "set_home_state(p_group_id uuid, p_home_state text)",
     // components/lobby-stage.tsx: the commissioner starting the season.
@@ -1061,8 +1061,8 @@ test("no security-definer function in public is authenticated-executable outside
     "test_refill_actions(p_group_id uuid)",
     // components/game-runtime-controls.tsx: flagging a bad question.
     "report_question(p_attempt_id uuid, p_reason text)",
-    // commissioner-gated day advance, called from the game shell.
-    "advance_group_day(p_group_id uuid)",
+    // commissioner-gated day advance / fast-forward, called from the game shell.
+    "advance_group_day(p_group_id uuid, p_days integer)",
   ];
 
   // Not client RPCs, but each has a specific, verified reason to be
@@ -1080,19 +1080,6 @@ test("no security-definer function in public is authenticated-executable outside
     // `supabase.rpc('is_group_member', ...)` calls. Not itself in
     // CLIENT_CALLABLE because no component calls it directly.
     "is_group_member(p_group_id uuid, p_user_id uuid)",
-    // `create_group` is the v1 league-creation RPC superseded by
-    // `create_group_v2` (finding 13): no client code calls it any more
-    // (`grep -rn "\"create_group\"" components hooks app` -- no hits, only
-    // `create_group_v2`), but its `grant execute ... to authenticated` from
-    // 202607300001_initial_schema.sql / 202607300728_fix_create_group_invite_
-    // generator.sql was never revoked when the v1 API route was deleted
-    // (8bf8aae). It is internally guarded (requires auth.uid(), validates its
-    // own input) so this is not an auth bypass, but it is dead-code drift the
-    // allowlist should surface rather than silently relabel as
-    // client-callable. Tracked in docs/superpowers/backlog.md for a future
-    // migration to revoke; kept here, explicitly, so this probe passes against
-    // today's actual grants without pretending the client calls it.
-    "create_group(p_name text, p_sports text[], p_season_length integer)",
   ];
 
   const { data, error } = await admin.rpc("security_definer_grants");
@@ -1115,6 +1102,15 @@ test("no security-definer function in public is authenticated-executable outside
     "these security-definer functions are authenticated-executable but are not on the client-callable " +
       "allowlist or the documented exception list -- a signed-in player can call them directly",
   );
+
+  // `create_group` (v1) was superseded by `create_group_v2` and its stale
+  // `authenticated` grant -- the one documented exception this list used to
+  // carry -- was revoked in 20260810120000_revoke_create_group_v1.sql. The
+  // function still exists as migration history; assert the revoke holds so
+  // the grant cannot quietly come back.
+  const v1 = "create_group(p_name text, p_sports text[], p_season_length integer)";
+  assert.equal(byName.has(v1), true, `${v1} should still exist in the schema`);
+  assert.equal(byName.get(v1), false, `${v1} should no longer be authenticated-executable`);
 });
 
 // Finding 11: seasons.last_scored_on, player_actions.last_refresh_on and

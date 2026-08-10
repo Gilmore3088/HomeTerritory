@@ -1,0 +1,11 @@
+-- `create_group` (v1) was fully superseded by `create_group_v2`
+-- (20260730082000): no client code calls it (finding 13 deleted its API
+-- route), but its `grant execute ... to authenticated` from the initial
+-- schema was never revoked, so any signed-in user could still create an
+-- old-shape league (no test_mode/board_scope/opening_mode) that the current
+-- UI cannot drive. Internally guarded, so not an auth bypass -- this closes
+-- the dead-code drift tracked in docs/superpowers/backlog.md
+-- (P1-security-grant) and in tests/db/audit.test.ts's documented exception
+-- list. The function itself stays defined as migration history; only the
+-- grant goes.
+revoke execute on function public.create_group(text, text[], integer) from public, anon, authenticated;

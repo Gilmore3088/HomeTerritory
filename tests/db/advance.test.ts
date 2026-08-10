@@ -78,7 +78,13 @@ test("advance_group_day: commissioner advances, others are rejected", async () =
   assert.equal(asCommish.error, null, "commissioner succeeds");
 });
 
-test("advance_group_day scores at most once per local day", async () => {
+// The game-day counter (20260810120200) changed this contract on purpose:
+// the first advance of a day settles the current, unscored day without
+// touching the calendar, and once the day is settled each further advance
+// moves the group's calendar itself (groups.day_offset). Two same-day
+// advances therefore score two DISTINCT game days -- never the same day
+// twice.
+test("advance_group_day settles the current day, then advances the calendar", async () => {
   const commish = await createTestUser("Commish2");
   const member = await createTestUser("Member2");
   const created = await commish.rpc("create_group_v2", {
@@ -97,10 +103,17 @@ test("advance_group_day scores at most once per local day", async () => {
   await admin.from("seasons").update({ last_scored_on: "2000-01-01" }).eq("id", seasonId);
 
   await commish.rpc("advance_group_day", { p_group_id: groupId });
-  const c1 = ((await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? []).length;
+  const first = (await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? [];
+  assert.equal(first.length, 2, "first advance settles the current day for both members");
+
   await commish.rpc("advance_group_day", { p_group_id: groupId });
-  const c2 = ((await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? []).length;
-  assert.equal(c2, c1, "second same-day advance does not double-score");
+  const second = (await admin.from("daily_score_events").select("scored_on").eq("season_id", seasonId)).data ?? [];
+  assert.equal(second.length, 4, "second same-day advance scores the NEXT game day, not nothing");
+  const distinctDays = new Set(second.map((row) => row.scored_on));
+  assert.equal(distinctDays.size, 2, "the two advances scored two distinct game days -- no day was scored twice");
+
+  const group = (await admin.from("groups").select("day_offset").eq("id", groupId).single()).data as { day_offset: number };
+  assert.equal(group.day_offset, 1, "the second advance moved the group's calendar forward one day");
 });
 
 test("get_my_active_session returns null after the session resolves", async () => {

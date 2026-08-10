@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { dayNumber, timeLeft } from "@/lib/game-format";
 import { isTerritoryActionBlocked } from "@/lib/game-rules";
+import { blockedReason } from "@/lib/ux-copy";
 import { ADJ, NEUTRAL, STATE_NAMES, memberColor } from "@/lib/game-constants";
 import type { Attack, Member, Snapshot, Territory, View } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
@@ -39,6 +40,22 @@ export default function GameShell({ snapshot, me, view, setView, selected, setSe
   const myScore = snapshot.scores.find((score) => score.user_id === snapshot.current_user_id)?.cumulative_score ?? 0;
   const rivals = snapshot.members.filter((member) => member.user_id !== snapshot.current_user_id && snapshot.territories.some((territory) => territory.owner_id === member.user_id && (territory.adjacent ?? ADJ[territory.id] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === snapshot.current_user_id)));
 
+  // Twilight decay (the daily tick strips one garrison level from every
+  // uncontested state over the season's last three days) finally gets a
+  // surface: warn the day before it starts and label it while it runs.
+  const seasonDay = snapshot.season?.current_day ?? dayNumber(snapshot.season);
+  const seasonLength = snapshot.season
+    ? Math.max(1, Math.round((Date.parse(snapshot.season.ends_at) - Date.parse(snapshot.season.started_at)) / 86_400_000))
+    : null;
+  const twilightStartDay = seasonLength ? Math.max(1, seasonLength - 3) + 1 : null;
+  const twilight = seasonLength !== null && twilightStartDay !== null
+    ? seasonDay >= twilightStartDay
+      ? { active: true, text: "Twilight phase: every uncontested state loses one garrison level each day until the season ends." }
+      : seasonDay === twilightStartDay - 1
+        ? { active: false, text: "Twilight begins tomorrow: uncontested states will lose one garrison level each day." }
+        : null
+    : null;
+
   let action: null | { kind: string; label: string; danger?: boolean } = null;
   if (selectedTerritory) {
     if (selectedTerritory.owner_id === snapshot.current_user_id && selectedTerritory.hold_level < 3 && !selectedTerritory.contested) action = { kind: "fortify", label: `Fortify to garrison ${selectedTerritory.hold_level + 1}` };
@@ -57,6 +74,7 @@ export default function GameShell({ snapshot, me, view, setView, selected, setSe
       {view === "map" && (
         <section className={styles.board}>
           <div className={styles.mapGlow} />
+          {twilight && <div className={`${styles.twilightNote} ${twilight.active ? styles.twilightActive : ""}`}>{twilight.text}</div>}
           <TerritoryMap territories={snapshot.territories} members={snapshot.members} currentUser={snapshot.current_user_id} selected={selected} onSelect={(state) => { setSelected(state); setFront(null); }} front={front} />
           <div className={styles.hud}>
             <HudMetric value={snapshot.actions_remaining} label="Actions" danger={snapshot.actions_remaining === 0} />
@@ -116,13 +134,13 @@ function MissionDock({ snapshot, me, defense, homePending, busy, beginAction, re
   refill: () => void;
 }) {
   if (defense) {
-    return <div className={`${styles.missionDock} ${styles.missionDanger}`}><div><span>UNDER ATTACK · {timeLeft(defense.defense_deadline)}</span><h2>Defend {STATE_NAMES[defense.territory_id]}</h2><p>One answer decides who owns it.</p></div><button disabled={busy} onClick={() => beginAction("defend", defense.territory_id, defense.id)}>Defend now</button></div>;
+    return <div className={`${styles.missionDock} ${styles.missionDanger}`}><div><span>UNDER ATTACK · {timeLeft(defense.defense_deadline)}</span><h2>Defend {STATE_NAMES[defense.territory_id]}</h2><p>One answer decides who owns it. Defending never spends a move.</p></div><button disabled={busy} onClick={() => beginAction("defend", defense.territory_id, defense.id)}>Defend now</button></div>;
   }
   if (homePending && me?.home_state) {
     return <div className={styles.missionDock}><div><span>OPENING MOVE</span><h2>Secure {STATE_NAMES[me.home_state]}</h2><p>Answer once to raise your starting garrison.</p></div><button disabled={busy} onClick={() => beginAction("home", me.home_state!)}>Play question</button></div>;
   }
   if (snapshot.actions_remaining === 0) {
-    return <div className={styles.missionDock}><div><span>ACTIONS SPENT</span><h2>Hold the line</h2><p>Claiming, attacking and fortifying all spend a move. More arrive at the daily refresh.</p></div>{snapshot.group.test_mode && <button disabled={busy} onClick={refill}>Refill test actions</button>}</div>;
+    return <div className={styles.missionDock}><div><span>ACTIONS SPENT</span><h2>Hold the line</h2><p>Claiming, attacking and fortifying each spend a move; defending is always free. More moves arrive at the daily refresh.</p></div>{snapshot.group.test_mode && <button disabled={busy} onClick={refill}>Refill test actions</button>}</div>;
   }
   return <div className={styles.missionDock}><div><span>YOUR MOVE</span><h2>Choose a border state</h2><p>Tap a neighboring state to claim or attack.</p></div><div className={styles.actionCount}>{snapshot.actions_remaining}<small>left</small></div></div>;
 }
@@ -146,12 +164,21 @@ function TerritorySheet({ territory, owner, currentUser, homeState, action, canT
     sharesBorder: canTarget,
     actionsRemaining,
   }));
+  // The specific blocker (no moves / contested / no border) outranks the
+  // generic explainer, so a greyed button always says why.
+  const blocked = blockedReason({
+    hasAction: Boolean(action),
+    actionsRemaining,
+    contested: territory.contested,
+    canTarget,
+    kind: action?.kind,
+  });
   return (
     <aside className={styles.territorySheet}>
       <button className={styles.sheetHandle} onClick={onClose} aria-label="Close territory details" />
       <div className={styles.sheetTitle}><div><span>{territory.region}</span><h2>{STATE_NAMES[territory.id]}</h2></div><div className={styles.stateCode}>{territory.id}</div></div>
       <div className={styles.ownerRow}><span style={{ background: owner ? memberColor(owner) : NEUTRAL }} /><strong>{owner ? mine ? "Your territory" : owner.display_name : "Unclaimed"}</strong><small>Garrison {territory.hold_level}{homeState === territory.id ? " · Home" : ""}</small></div>
-      <p className={styles.sheetReason}>{territory.contested ? "An attack is already active here." : mine ? "Fortify once per day — it spends a move — to increase the cost of stealing it." : canTarget ? "This state touches your border." : "You do not share a border with this state."}</p>
+      <p className={styles.sheetReason}>{blocked ?? (mine ? "Fortify once per day — it spends a move — to increase the cost of stealing it." : canTarget ? "This state touches your border." : "You do not share a border with this state.")}</p>
       {action && <button className={`${styles.sheetAction} ${action.danger ? styles.sheetActionDanger : ""}`} disabled={disabled} onClick={onAction}>{action.label}</button>}
     </aside>
   );

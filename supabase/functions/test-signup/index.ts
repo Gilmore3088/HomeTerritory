@@ -1,18 +1,39 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+// Allowed browser origins come from the ALLOWED_ORIGINS secret (comma
+// separated, e.g. "https://territory.example.com,https://*.vercel.app";
+// a "*." prefix matches one subdomain level for preview deployments).
+// Unset keeps the old permissive behavior so local stacks keep working.
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "*")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const originAllowed = (origin: string): boolean =>
+  allowedOrigins.some((allowed) => {
+    if (allowed === "*" || allowed === origin) return true;
+    if (allowed.includes("://*.")) {
+      const [scheme, host] = allowed.split("://*.");
+      return origin.startsWith(`${scheme}://`) && origin.endsWith(`.${host}`) && !origin.slice(scheme.length + 3, -host.length - 1).includes(".");
+    }
+    return false;
+  });
+
+const corsHeaders = (origin: string) => ({
+  ...(originAllowed(origin) ? { "Access-Control-Allow-Origin": allowedOrigins.includes("*") ? "*" : origin } : {}),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Vary": "Origin",
   "Content-Type": "application/json",
-};
-
-const respond = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: corsHeaders });
+});
 
 Deno.serve(async (request: Request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const origin = request.headers.get("Origin") ?? "";
+  const respond = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: corsHeaders(origin) });
+
+  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
   if (request.method !== "POST") return respond({ error: "Method not allowed" }, 405);
 
   try {

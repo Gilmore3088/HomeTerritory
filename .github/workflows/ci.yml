@@ -36,3 +36,37 @@ jobs:
         run: npm run typecheck
       - name: Build production application
         run: npm run build
+
+  engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase stack
+        run: supabase start -x vector -x logflare
+      - name: Export stack credentials for the test harness
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_TEST_URL=${API_URL}"
+            echo "SUPABASE_TEST_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_TEST_SERVICE_KEY=${SERVICE_ROLE_KEY}"
+          } >> "$GITHUB_ENV"
+      - name: Run DB engine suite
+        run: npm run test:db
+      - name: Run smoke suite
+        run: npm run test:smoke
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop --no-backup

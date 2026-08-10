@@ -24,9 +24,6 @@
       }
     ],
     "paths": {
-      "@/data/us-states.json": [
-        "./data/us-states.ts"
-      ],
       "@/*": [
         "./*"
       ]

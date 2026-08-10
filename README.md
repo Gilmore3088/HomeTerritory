@@ -6,14 +6,14 @@ This repository is not a static mockup. The application uses shared Supabase sta
 
 ## What works
 
-- Email/password signup and sign-in through Supabase Auth
-- Create a private group and select sports and season length
-- Join a group with an eight-character invite code
-- Three-player minimum and commissioner-controlled season start
-- Interactive, zoomable 50-state map
+- Email/password sign-in through Supabase Auth; playtest signup via invite code
+- Create a private league with sports, season length (7-60 days), board scope, and difficulty
+- Join a league with an eight-character invite code
+- Home-ground selection, a two-human minimum (bots can fill seats), and commissioner-controlled season start
+- Interactive, map-first 50-state (or lower-48) game UI
 - Neutral claims, adjacency-restricted attacks, hold levels, fortification, and 24-hour defenses
 - Tiered questions, multi-answer attack streaks, timers, action consumption, cooldowns, and underdog discounts
-- Server-side answer checking; correct answers are not sent to the browser
+- Server-side answer checking; the correct answer is revealed only after an attempt is closed
 - One active attack per state and automatic timeout resolution
 - Shared cumulative scoring, region bonuses, leaderboard, and activity feed
 - Supabase Realtime subscriptions so multiple phones update from the same database
@@ -84,7 +84,7 @@ npm run dev
 
 Then open `http://localhost:3000`.
 
-To test the real multiplayer flow, create three accounts using three email addresses, join the same invite code, and start the season from the commissioner account.
+To test the real multiplayer flow, create at least two accounts (bots can fill the remaining seats), join the same invite code, pick home states, and start the season from the commissioner account.
 
 ## Deploy to Vercel
 
@@ -121,9 +121,15 @@ The migration creates 550 starter questions—11 per state—so claims, attacks,
 ## Verification
 
 ```bash
+npm run lint
 npm test
 npm run typecheck
 npm run build
 ```
 
-The GitHub Actions CI workflow runs all three checks on pull requests.
+The GitHub Actions CI workflow runs all four checks on pull requests, plus an
+`engine` job that applies the full migration chain to a disposable PostgreSQL 16
+database and runs the SQL gameplay tests in `supabase/tests/`.
+
+A full repository audit with findings and their resolutions lives in
+`docs/repo-audit-2026-07-30.md`.

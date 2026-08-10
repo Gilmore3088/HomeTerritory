@@ -157,6 +157,30 @@ no longer exists on `/`.
 - CI has no SQL-level tests; the only tests are 5 unit tests on the
   duplicated rules module (see finding 9).
 
+## Resolution log (updated after the fix pass)
+
+| # | Finding | Status |
+| --- | --- | --- |
+| 1 | Resumed questions leak the correct answer | **Resolved** — deterministic per-attempt option shuffle in `pick_next_question` and `get_my_active_session` (migration `20260730120000`), verified by SQL engine tests |
+| 2 | `test-signup` wrote home state to the wrong table | **Resolved** — writes `group_members`, checks every error, avoids states already used as another member's home |
+| 3 | `test-signup` unconfirmed-account takeover | **Resolved** — the function never modifies an existing auth user; existing emails get a 409 |
+| 4 | Home-ground re-roll loophole | **Resolved** — home timeouts settle home ground; concurrent home sessions blocked (migration `20260730120000`), verified by SQL engine tests |
+| 5 | No lockfile / unpinned deps | **Resolved** — `package-lock.json` committed, CI uses `npm ci` |
+| 6 | Two parallel auth systems, hardcoded client keys | **Resolved** — the map-first UI now uses the env-configured cookie-backed client from `lib/supabase/client`, shared with the `proxy.ts` session refresh |
+| 7 | Legacy UI reachable and broken | **Resolved (gated)** — legacy pages redirect to `/`, legacy API routes return 410, and the v1 `create_group` RPC is revoked (migration `20260730130000`). The now-dead legacy modules (`components/game-client.tsx`, `dashboard-client.tsx`, `login-form.tsx`, `app-header.tsx`, `lib/game-rules.ts`, `lib/types.ts`, `lib/supabase/server.ts`, `tests/game-rules.test.ts`, the `react-simple-maps`/`us-atlas` dependencies) remain on disk because file deletion was not permitted in this automated session — delete them in an interactive session when convenient |
+| 8 | Stuck question state; report button missing in v2 | **Resolved** — stale operations clear once expired, and the question arena has a report/quarantine button again |
+| 9 | Two disagreeing adjacency sources; tests exercised a copy | **Resolved** — the UI derives adjacency from the server snapshot everywhere (bundled `adjacency.json` is only a lobby-preview fallback); CI now runs the real SQL engine via `supabase/tests/`, and `tests/data-integrity.test.ts` validates the client data files (symmetry, coverage, regions partition) |
+| 10 | Season question pool exhausts | **Resolved** — seen-tracking is per player (migration `20260730130000`); a larger validated question bank remains future work |
+| 11 | Docs drift | **Resolved** — README updated (player minimum, season lengths, answer-reveal semantics, verification steps) |
+| L1 | Profiles readable by all authenticated users | **Resolved** — read policy now limited to yourself and members of your groups (migration `20260730130000`) |
+| L2 | Cron secret compare not constant-time | **Resolved** — `timingSafeEqual` in the cron route |
+| L3 | `run_daily_tick` skipped missed days | **Resolved** — missed days back-filled at current holdings (documented approximation, migration `20260730130000`) |
+| L4 | `create_group_v2` accepted arbitrary sports | **Resolved** — sports validated (1-10 entries, 1-24 chars each) |
+| L5 | `tsconfig` `.json`→`.ts` path alias hack | **Resolved** — the atlas is imported as `@/data/us-states`; alias removed |
+| L6 | Service worker never registered | **Resolved** — `PwaRegister` (previously defined but never mounted) is now rendered from the root layout |
+| L7 | Profiles FK to `auth.users` dropped | **Accepted** — intentional: bot profiles have no auth user; orphaned rows are harmless and RLS-scoped |
+| L8 | No guard against multiple concurrent sessions | **Accepted** — claims/attacks each consume an action (self-limiting), and blocking concurrency would prevent defending while another question is open; the home action, where re-rolling was profitable, is now guarded |
+
 ## Suggested priority order
 
 1. Fix the resumed-question answer leak (#1) — one-line-ish SQL fix, biggest

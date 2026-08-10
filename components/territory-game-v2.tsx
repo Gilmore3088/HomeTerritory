@@ -8,16 +8,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { createClient, type Session, type User } from "@supabase/supabase-js";
-import mapData from "@/data/us-states.json";
+import type { Session, User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+import mapData from "@/data/us-states";
 import adjacencyData from "@/data/adjacency.json";
 import styles from "./territory-game-v2.module.css";
 
-const SUPABASE_URL = "https://gduvdnpxgdniogmxxlmg.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Xgxcnh4NUlZ7dkYHeC-xiw_mOmxQxGZ";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-});
+// Cookie-backed client from env config, shared with proxy.ts session refresh.
+const supabase = createClient();
 
 const PATHS = mapData.paths as Record<string, string>;
 const CENTROIDS = mapData.centroids as Record<string, [number, number]>;
@@ -606,19 +604,25 @@ function GameShell({ snapshot, me, view, setView, selected, setSelected, front, 
 }) {
   const memberMap = useMemo(() => Object.fromEntries(snapshot.members.map((member) => [member.user_id, member])), [snapshot.members]);
   const territoryMap = useMemo(() => Object.fromEntries(snapshot.territories.map((territory) => [territory.id, territory])), [snapshot.territories]);
+  // The engine enforces legality from territories.adjacent; mirror that here so
+  // the UI never disagrees with the server (the bundled ADJ file differs on AK/HI).
+  const serverAdjacency = useMemo(
+    () => Object.fromEntries(snapshot.territories.map((territory) => [territory.id, territory.adjacent ?? []])),
+    [snapshot.territories],
+  );
   const myStates = snapshot.territories.filter((territory) => territory.owner_id === snapshot.current_user_id);
   const legalTargets = useMemo(() => {
     if (!myStates.length) return new Set(snapshot.territories.map((territory) => territory.id));
     const targets = new Set<string>();
-    myStates.forEach((territory) => (territory.adjacent?.length ? territory.adjacent : ADJ[territory.id] ?? []).forEach((neighbor) => targets.add(neighbor)));
+    myStates.forEach((territory) => (serverAdjacency[territory.id] ?? []).forEach((neighbor) => targets.add(neighbor)));
     return targets;
-  }, [myStates, snapshot.territories]);
+  }, [myStates, snapshot.territories, serverAdjacency]);
   const selectedTerritory = selected ? territoryMap[selected] : null;
   const selectedOwner = selectedTerritory?.owner_id ? memberMap[selectedTerritory.owner_id] : null;
   const pendingDefense = snapshot.attacks.find((attack) => attack.defender_id === snapshot.current_user_id && attack.status === "contested");
   const homePending = me?.home_state && !me.home_completed;
   const myScore = snapshot.scores.find((score) => score.user_id === snapshot.current_user_id)?.cumulative_score ?? 0;
-  const rivals = snapshot.members.filter((member) => member.user_id !== snapshot.current_user_id && snapshot.territories.some((territory) => territory.owner_id === member.user_id && (territory.adjacent ?? ADJ[territory.id] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === snapshot.current_user_id)));
+  const rivals = snapshot.members.filter((member) => member.user_id !== snapshot.current_user_id && snapshot.territories.some((territory) => territory.owner_id === member.user_id && (serverAdjacency[territory.id] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === snapshot.current_user_id)));
 
   let action: null | { kind: string; label: string; danger?: boolean } = null;
   if (selectedTerritory) {
@@ -638,7 +642,7 @@ function GameShell({ snapshot, me, view, setView, selected, setSelected, front, 
       {view === "map" && (
         <section className={styles.board}>
           <div className={styles.mapGlow} />
-          <TerritoryMap territories={snapshot.territories} members={snapshot.members} currentUser={snapshot.current_user_id} selected={selected} onSelect={(state) => { setSelected(state); setFront(null); }} front={front} />
+          <TerritoryMap territories={snapshot.territories} members={snapshot.members} currentUser={snapshot.current_user_id} selected={selected} onSelect={(state) => { setSelected(state); setFront(null); }} front={front} adjacency={serverAdjacency} />
           <div className={styles.hud}>
             <HudMetric value={snapshot.actions_remaining} label="Actions" danger={snapshot.actions_remaining === 0} />
             <HudMetric value={myStates.length} label="States" />
@@ -683,7 +687,7 @@ function GameShell({ snapshot, me, view, setView, selected, setSelected, front, 
   );
 }
 
-function TerritoryMap({ territories, members, currentUser, selected, onSelect, front, previewHome }: {
+function TerritoryMap({ territories, members, currentUser, selected, onSelect, front, previewHome, adjacency = ADJ }: {
   territories: Territory[];
   members: Member[];
   currentUser: string;
@@ -691,6 +695,7 @@ function TerritoryMap({ territories, members, currentUser, selected, onSelect, f
   onSelect: (state: string) => void;
   front: string | null;
   previewHome?: string;
+  adjacency?: Record<string, string[]>;
 }) {
   const territoryMap = Object.fromEntries(territories.map((territory) => [territory.id, territory]));
   const memberMap = Object.fromEntries(members.map((member) => [member.user_id, member]));
@@ -702,8 +707,8 @@ function TerritoryMap({ territories, members, currentUser, selected, onSelect, f
   const onFront = (state: string) => {
     if (!front) return false;
     const ownerId = territoryMap[state]?.owner_id;
-    return (ownerId === currentUser && (ADJ[state] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === front)) ||
-      (ownerId === front && (ADJ[state] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === currentUser));
+    return (ownerId === currentUser && (adjacency[state] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === front)) ||
+      (ownerId === front && (adjacency[state] ?? []).some((neighbor) => territoryMap[neighbor]?.owner_id === currentUser));
   };
   const fill = (state: string) => {
     if (previewHome === state) return DANGER;
@@ -834,6 +839,22 @@ function QuestionArena({ operation, result, setOperation, setResult, refresh, no
     return () => window.clearInterval(timer);
   }, [question?.attempt_id, busy]);
 
+  async function report() {
+    if (!operation || !question || busy) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("report_question", {
+      p_attempt_id: question.attempt_id,
+      p_reason: "Player flagged this question from the arena",
+    });
+    setBusy(false);
+    if (error) {
+      notify(error.message, true);
+      return;
+    }
+    setOperation(null);
+    setResult({ ok: true, title: "Question quarantined", message: "The question was pulled from play and your action refunded." });
+  }
+
   async function submit(value = answer) {
     if (!operation || busy) return;
     setBusy(true);
@@ -864,5 +885,5 @@ function QuestionArena({ operation, result, setOperation, setResult, refresh, no
   if (!operation || !question) return <Loading label="Restoring question" />;
   const operationLabel = operation.action_type === "home" ? "HOME GROUND" : operation.action_type === "claim" ? "CLAIM" : operation.action_type === "attack" ? "ATTACK" : operation.action_type === "defend" ? "DEFENSE" : "FORTIFY";
 
-  return <main className={styles.questionPage}><div className={styles.questionState}>{operation.territory_id}</div><header><div><span>{operationLabel} · TIER {question.tier}</span><strong>{STATE_NAMES[operation.territory_id]}</strong></div><div className={`${styles.timer} ${seconds <= 8 ? styles.timerDanger : ""}`}>0:{String(seconds).padStart(2, "0")}</div></header><section className={styles.questionCard}><div className={styles.streak}>{Array.from({ length: operation.required_correct }, (_, index) => <span key={index} className={index < operation.correct_count ? styles.streakDone : ""} />)}</div><h1>{question.text}</h1>{question.format === "multiple_choice" ? <div className={styles.answerGrid}>{(question.options ?? []).map((option) => <button key={option} className={answer === option ? styles.answerSelected : ""} onClick={() => setAnswer(option)}>{option}</button>)}</div> : <input className={styles.freeAnswer} autoFocus value={answer} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Type your answer" />}<button className={styles.lockButton} disabled={busy || !answer} onClick={() => submit()}>{busy ? "Checking…" : "Lock answer"}</button></section></main>;
+  return <main className={styles.questionPage}><div className={styles.questionState}>{operation.territory_id}</div><header><div><span>{operationLabel} · TIER {question.tier}</span><strong>{STATE_NAMES[operation.territory_id]}</strong></div><div className={`${styles.timer} ${seconds <= 8 ? styles.timerDanger : ""}`}>0:{String(seconds).padStart(2, "0")}</div></header><section className={styles.questionCard}><div className={styles.streak}>{Array.from({ length: operation.required_correct }, (_, index) => <span key={index} className={index < operation.correct_count ? styles.streakDone : ""} />)}</div><h1>{question.text}</h1>{question.format === "multiple_choice" ? <div className={styles.answerGrid}>{(question.options ?? []).map((option) => <button key={option} className={answer === option ? styles.answerSelected : ""} onClick={() => setAnswer(option)}>{option}</button>)}</div> : <input className={styles.freeAnswer} autoFocus value={answer} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} placeholder="Type your answer" />}<button className={styles.lockButton} disabled={busy || !answer} onClick={() => submit()}>{busy ? "Checking…" : "Lock answer"}</button><button className={styles.textButton} disabled={busy} onClick={report}>Something wrong? Report this question</button></section></main>;
 }

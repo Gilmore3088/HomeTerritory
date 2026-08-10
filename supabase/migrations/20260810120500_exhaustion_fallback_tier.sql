@@ -3,9 +3,10 @@
 -- has seen (20260803181000), but it ordered purely by `attempt_count`,
 -- ignoring the session tier -- a depleted state could hand a tier-3 streak
 -- a tier-1 question. The fallback now prefers the closest adaptive tier
--- first, then the least-used question. Body transcribed from
--- 20260803181000_fix_exhausted_pool_repeat.sql; only the first fallback's
--- ORDER BY changes.
+-- first, then the least-used question. Body transcribed from the LIVE
+-- definition (20260803181100_fix_resume_adaptive_tier.sql -- which also
+-- stamps `served_tier` on the attempt so resume returns the tier the
+-- question was served with); only the first fallback's ORDER BY changes.
 create or replace function public.pick_next_question(p_session_id uuid)
 returns jsonb
 language plpgsql
@@ -85,8 +86,8 @@ begin
   v_tier := public.adaptive_tier(v_question.tier, v_question.attempt_count, v_question.correct_count);
   v_expires := now() + case when v_tier = 3 then interval '45 seconds' else interval '30 seconds' end;
 
-  insert into public.question_attempts(session_id, question_id, user_id, expires_at)
-  values (p_session_id, v_question.id, v_session.user_id, v_expires)
+  insert into public.question_attempts(session_id, question_id, user_id, expires_at, served_tier)
+  values (p_session_id, v_question.id, v_session.user_id, v_expires, v_tier)
   returning id into v_attempt;
 
   update public.game_sessions set current_attempt_id = v_attempt where id = p_session_id;

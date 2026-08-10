@@ -12,3 +12,11 @@ grant all on all tables in schema public to service_role;
 grant all on all sequences in schema public to service_role;
 alter default privileges in schema public grant all on tables to service_role;
 alter default privileges in schema public grant all on sequences to service_role;
+
+-- Functions too: internal helpers like resolve_expired_attacks /
+-- resolve_expired_sessions were revoked from public/anon/authenticated by
+-- the Phase-1 grant hygiene and, on stacks without service_role function
+-- defaults, ended up executable by nobody but the owner -- the cron tick
+-- and the DB test harness both call them under the secret key.
+grant execute on all functions in schema public to service_role;
+alter default privileges in schema public grant execute on functions to service_role;

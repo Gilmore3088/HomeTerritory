@@ -19,6 +19,7 @@ export default function TerritoryGame() {
     session,
     authReady,
     groups,
+    groupsReady,
     groupId,
     setGroupId,
     snapshot,
@@ -41,6 +42,10 @@ export default function TerritoryGame() {
 
   if (!authReady) return <Loading label="Loading the battlefield" />;
   if (!session) return <AuthStage notify={notify} />;
+  // Wait for the first get_my_groups read: rendering the league-entry screen
+  // before it settles flashed "join or create" at every player with leagues,
+  // and left them stranded there if the read was still in flight.
+  if (!groupsReady) return <Loading label="Finding your leagues" />;
   if (!groupId || groups.length === 0) {
     return <LeagueEntry user={session.user} onCreated={(id) => loadGroups(id)} notify={notify} />;
   }

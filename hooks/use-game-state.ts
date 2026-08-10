@@ -11,6 +11,7 @@ const supabase = createClient();
 
 export interface GameState {
   groups: GroupRow[];
+  groupsReady: boolean;
   groupId: string | null;
   setGroupId: (id: string | null) => void;
   snapshot: Snapshot | null;
@@ -25,11 +26,12 @@ export interface GameState {
   loadGroups: (preferred?: string | null) => Promise<void>;
   loadSnapshot: (target?: string | null) => Promise<void>;
   beginAction: (kind: string, state: string, attackId?: string) => Promise<void>;
-  advanceGroupDay: () => Promise<void>;
+  advanceGroupDay: (days?: number) => Promise<void>;
 }
 
 export function useGameState(session: Session | null): GameState {
   const [groups, setGroups] = useState<GroupRow[]>([]);
+  const [groupsReady, setGroupsReady] = useState(false);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [operation, setOperation] = useState<ActiveOperation | null>(null);
@@ -47,6 +49,7 @@ export function useGameState(session: Session | null): GameState {
     setSignedIn(Boolean(session));
     if (!session) {
       setGroups([]);
+      setGroupsReady(false);
       setGroupId(null);
       setSnapshot(null);
     }
@@ -60,11 +63,15 @@ export function useGameState(session: Session | null): GameState {
   const loadGroups = useCallback(async (preferred?: string | null) => {
     const { data, error } = await supabase.rpc("get_my_groups");
     if (error) {
+      // The read still counts as settled: the caller shows the league-entry
+      // screen with the error toast instead of an indefinite loading state.
+      setGroupsReady(true);
       notify(error.message, true);
       return;
     }
     const rows = (data ?? []) as GroupRow[];
     setGroups(rows);
+    setGroupsReady(true);
     const saved = window.localStorage.getItem("territory_group");
     const next = pickActiveGroup(rows, saved, preferred);
     setGroupId(next);
@@ -134,6 +141,28 @@ export function useGameState(session: Session | null): GameState {
     };
   }, [snapshot?.season?.id, groupId, loadSnapshot]);
 
+  // Tab refocus refresh (P2a kept only the 20s poll + realtime; a returning
+  // tab waited up to 20s for fresh state). Throttled so a focus event and the
+  // visibilitychange it usually arrives with trigger one read, not two.
+  useEffect(() => {
+    if (!session) return;
+    let lastRefresh = 0;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastRefresh < 2000) return;
+      lastRefresh = now;
+      void loadGroups();
+      if (groupId) void loadSnapshot(groupId);
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [session, groupId, loadGroups, loadSnapshot]);
+
   async function beginAction(kind: string, state: string, attackId?: string) {
     if (!snapshot?.season) return;
     setBusy(true);
@@ -152,20 +181,21 @@ export function useGameState(session: Session | null): GameState {
     setOperation(data as ActiveOperation);
   }
 
-  async function advanceGroupDay() {
+  async function advanceGroupDay(days = 1) {
     if (!snapshot) return;
     setBusy(true);
-    const { error } = await supabase.rpc("advance_group_day", { p_group_id: snapshot.group.id });
+    const { error } = await supabase.rpc("advance_group_day", { p_group_id: snapshot.group.id, p_days: days });
     setBusy(false);
     if (error) notify(error.message, true);
     else {
-      notify("The day advanced.");
+      notify(days === 1 ? "The day advanced." : `Fast-forwarded ${days} days.`);
       loadSnapshot();
     }
   }
 
   return {
     groups,
+    groupsReady,
     groupId,
     setGroupId,
     snapshot,

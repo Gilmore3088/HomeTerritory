@@ -1,0 +1,59 @@
+name: Nightly facts ETL
+
+on:
+  schedule:
+    - cron: "37 9 * * *"   # nightly, offset from the hour (house convention)
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Single ETL job to run (blank = the nightly set)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: territory-etl
+  cancel-in-progress: false
+
+jobs:
+  etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SUPABASE_URL: ${{ secrets.ETL_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.ETL_SUPABASE_SECRET_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Guard secrets
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "ETL_SUPABASE_URL / ETL_SUPABASE_SECRET_KEY secrets are not set -- see etl/README.md" >&2
+            exit 1
+          fi
+      - name: Single job (manual dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.job != '' }}
+        run: npm run etl -- ${{ inputs.job }}
+      - name: Teams and venues
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- wikidata-teams
+      - name: Championships
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- wikidata-championships
+      - name: Athletes (all states)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- wikidata-athletes
+      - name: Careers and aliases
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- wikidata-enrich
+      - name: Refresh derived links and compile questions
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- refresh-and-compile

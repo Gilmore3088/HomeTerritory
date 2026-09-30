@@ -133,7 +133,7 @@ suites extended (`compiler`, `norepeat`, `ops`, `review`, `pvp`).
   leaks, distractors an `answer_matches` grader could accept), Gate B
   (only gold/cross-verified facts compile), idempotent by
   `(template_id, family_key)`, retirement never resurrected. Template
-  catalog v1+v1.1: 26 templates with co-tenancy exclusion, unambiguity
+  catalog v1+v1.1+v1.2: 29 templates (incl. the leaders family: undisputed season HR/RBI leads derived from Lahman Batting.csv, tied seasons excluded by construction) with co-tenancy exclusion, unambiguity
   margins on comparisons (verified comparators only), smart-article
   phrasing ("Super Bowl 50" vs "the 2004 World Series"), golden tests in
   CI. cross_verify_facts() runs nightly before compiling: unique-match

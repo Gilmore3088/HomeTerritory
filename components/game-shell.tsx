@@ -8,6 +8,7 @@ import { ADJ, NEUTRAL, STATE_NAMES, memberColor } from "@/lib/game-constants";
 import type { Attack, Member, Snapshot, Territory, View } from "@/lib/game-types";
 import styles from "./territory-game-v2.module.css";
 import TerritoryMap from "./territory-map";
+import DuelPanel from "./duel-panel";
 import { FeedOverlay, StandingsOverlay } from "./game-overlays";
 
 export default function GameShell({ snapshot, me, view, setView, selected, setSelected, front, setFront, busy, beginAction, openLeagues, refill }: {
@@ -111,6 +112,13 @@ export default function GameShell({ snapshot, me, view, setView, selected, setSe
       )}
       {view === "standings" && <StandingsOverlay snapshot={snapshot} />}
       {view === "feed" && <FeedOverlay snapshot={snapshot} />}
+      {snapshot.season?.status === "active" && (
+        <DuelPanel
+          seasonId={snapshot.season.id}
+          currentUserId={snapshot.current_user_id}
+          pendingDefense={pendingDefense}
+        />
+      )}
       <nav className={styles.bottomNav}>
         <button className={view === "map" ? styles.navActive : ""} onClick={() => setView("map")}><span>⌖</span>Map</button>
         <button className={view === "standings" ? styles.navActive : ""} onClick={() => setView("standings")}><span>▥</span>Standings</button>

@@ -148,11 +148,18 @@ suites extended (`compiler`, `norepeat`, `ops`, `review`, `pvp`).
   groups (`pvp_rivalries()` on standings), defender's choice
   (`p_sport` on defend), wager attacks (2 moves, tier-3 free-fill, no
   garrison on a successful defense), and season awards in the recap
-  (Best Defender, Sharpest Sport, Fastest Gun, Upset, Rivalry).
+  (Best Defender, Sharpest Sport, Fastest Gun, Upset, Rivalry). Live
+  duels: defender proposes on a contested attack, attacker accepts, one
+  shared question, first correct answer settles the state under the
+  duel row's lock (race-tested); async defense stays the default and a
+  void duel changes nothing. Daily gauntlet: one shared 5-pack per
+  league per local day (the deliberate uniqueness exception),
+  server-graded and timed, bonus paid once into the season score, with
+  its own leaderboard strip on standings.
 
-Deliberately deferred from P3d/P3e (backlogged, in the plan doc): live
-duels (Realtime presence), the daily gauntlet, freshness dashboard,
-current-season incremental sources, and the attribution page.
+Deliberately deferred from P3e (backlogged, in the plan doc): freshness
+dashboard, current-season incremental sources (needs CFBD/balldontlie
+keys), and the data-sources attribution page.
 
 New owner actions on deploy: expose the `facts` schema in the production
 API settings (Dashboard → API → Exposed schemas, mirroring

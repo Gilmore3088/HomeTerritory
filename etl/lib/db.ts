@@ -25,10 +25,12 @@ export function readEnv(): EtlEnv {
 }
 
 export function factsClient(env: EtlEnv): SupabaseClient {
+  // The generic default pins schema to "public"; the facts profile is the
+  // whole point here, so widen the handle explicitly.
   return createClient(env.url, env.serviceKey, {
     auth: { persistSession: false },
     db: { schema: "facts" },
-  });
+  }) as unknown as SupabaseClient;
 }
 
 const BATCH = 400;

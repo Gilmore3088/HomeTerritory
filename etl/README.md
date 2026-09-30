@@ -56,6 +56,28 @@ repository secrets `ETL_SUPABASE_URL` and `ETL_SUPABASE_SECRET_KEY`
 (production project URL + secret key). Manual dispatch takes a single job
 name for reruns. Run results land in `facts.etl_runs`.
 
+The nightly `refresh-and-compile` step also runs the operating gates
+(service-role RPCs from `20260930140000_question_ops.sql`):
+
+- `retire_flagged_questions()` retires generated questions whose live pass
+  rate looks leaked/trivial (> 97% over 25+ attempts) or broken (< 5%),
+  stamping `questions.retired_reason`.
+- `starter_bank_cutover()` retires a state's handwritten starter bank once
+  that state holds 500+ active generated questions. Reversible per
+  question via `reactivate_question()`.
+- `question_coverage()` is the state x tier x format bank map (with 7-day
+  `pool_thin` counts from `public.serving_events`) for checking where the
+  bank runs thin: `select * from question_coverage()` in the SQL editor.
+
+## Gate C (advisory LLM review)
+
+`node --experimental-strip-types etl/gate-c.ts [batch]` asks Claude to
+check never-reviewed generated questions for ambiguity, leaks and multiple
+defensible answers. Findings land in `facts.fact_conflicts`
+(kind `gate_c_flag`) for a human to act on; nothing auto-retires. Needs the
+optional `ETL_ANTHROPIC_API_KEY` repository secret (exposed to the step as
+`ANTHROPIC_API_KEY`); without it the step logs a notice and exits cleanly.
+
 ## Testing
 
 `tests/etl/*.test.ts` (part of `npm test`) covers every pure parser against

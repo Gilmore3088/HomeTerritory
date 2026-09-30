@@ -33,6 +33,13 @@ export function factsClient(env: EtlEnv): SupabaseClient {
   }) as unknown as SupabaseClient;
 }
 
+/** RPCs (refresh_derived, compile_questions, the ops gates) live in the
+ * public schema; PostgREST resolves rpc() against the client's profile, so
+ * they need a public-profile handle, not the facts one. */
+export function publicClient(env: EtlEnv): SupabaseClient {
+  return createClient(env.url, env.serviceKey, { auth: { persistSession: false } });
+}
+
 const BATCH = 400;
 
 export async function upsertBatch(

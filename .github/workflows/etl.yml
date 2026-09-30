@@ -57,3 +57,9 @@ jobs:
       - name: Refresh derived links and compile questions
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
         run: npm run etl -- refresh-and-compile
+      - name: Gate C advisory review
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ETL_ANTHROPIC_API_KEY }}
+        # Skips itself with a notice when the key secret is not configured.
+        run: node --experimental-strip-types etl/gate-c.ts

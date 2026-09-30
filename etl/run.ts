@@ -7,7 +7,7 @@
 //   lahman <dir>             seed from an unzipped Lahman CSV directory
 //   nflverse-draft <file>    seed from nflverse draft_picks.csv
 // Environment: SUPABASE_URL + SUPABASE_SECRET_KEY (ETL_DRY_RUN=1 to print).
-import { factsClient, logRun, readEnv } from "./lib/db.ts";
+import { factsClient, logRun, publicClient, readEnv } from "./lib/db.ts";
 import { ingestTeamsAndVenues } from "./sources/wikidata-teams.ts";
 import { ingestAthletes } from "./sources/wikidata-athletes.ts";
 import { ingestChampionships } from "./sources/wikidata-championships.ts";
@@ -42,16 +42,27 @@ async function main(): Promise<void> {
       await logRun(client, "nflverse-draft", env.dryRun, () => seedNflverseDraft(client, arg, env.dryRun));
       return;
     case "refresh-and-compile": {
-      // Both steps run in-database (service-role RPCs); nothing round-trips.
+      // The whole nightly pipeline runs in-database (service-role RPCs):
+      // rebuild derived links, recompile the catalog, apply the telemetry
+      // retirement gate, and cut states over once generated coverage clears
+      // the floor. Nothing round-trips row data.
+      const rpc = publicClient(env);
       await logRun(client, "refresh-and-compile", env.dryRun, async () => {
         if (env.dryRun) return 0;
-        const links = await client.rpc("refresh_derived");
+        const links = await rpc.rpc("refresh_derived");
         if (links.error) throw new Error(`refresh_derived failed: ${links.error.message}`);
-        const compiled = await client.rpc("compile_questions");
+        const compiled = await rpc.rpc("compile_questions");
         if (compiled.error) throw new Error(`compile_questions failed: ${compiled.error.message}`);
-        const summary = compiled.data as { inserted?: number; refreshed?: number } | null;
-        console.log(`derived links: ${JSON.stringify(links.data)}; compile: ${JSON.stringify(summary)}`);
-        return (summary?.inserted ?? 0) + (summary?.refreshed ?? 0);
+        const retired = await rpc.rpc("retire_flagged_questions");
+        if (retired.error) throw new Error(`retire_flagged_questions failed: ${retired.error.message}`);
+        const cutover = await rpc.rpc("starter_bank_cutover");
+        if (cutover.error) throw new Error(`starter_bank_cutover failed: ${cutover.error.message}`);
+        const summary = compiled.data as { written?: number } | null;
+        console.log(
+          `derived links: ${JSON.stringify(links.data)}; compile: ${JSON.stringify(summary)}; ` +
+          `retired: ${JSON.stringify(retired.data)}; cutover: ${JSON.stringify(cutover.data)}`,
+        );
+        return summary?.written ?? 0;
       });
       return;
     }

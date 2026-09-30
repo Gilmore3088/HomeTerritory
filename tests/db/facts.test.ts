@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createClient } from "@supabase/supabase-js";
-import { admin, anonClient, createTestUser, stackAnonKey, stackUrl } from "./helpers.ts";
+import { admin, createTestUser, stackAnonKey, stackUrl } from "./helpers.ts";
 
 test("no client-side role holds any privilege in the facts schema", async () => {
   const { data, error } = await admin.rpc("facts_privilege_audit");

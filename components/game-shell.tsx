@@ -20,7 +20,7 @@ export default function GameShell({ snapshot, me, view, setView, selected, setSe
   front: string | null;
   setFront: (userId: string | null) => void;
   busy: boolean;
-  beginAction: (kind: string, state: string, attackId?: string) => void;
+  beginAction: (kind: string, state: string, attackId?: string, options?: { sport?: string; wager?: boolean }) => void;
   openLeagues: () => void;
   refill: () => void;
 }) {
@@ -104,7 +104,7 @@ export default function GameShell({ snapshot, me, view, setView, selected, setSe
               actionsRemaining={snapshot.actions_remaining}
               busy={busy}
               onClose={() => setSelected(null)}
-              onAction={() => action && beginAction(action.kind, selectedTerritory.id)}
+              onAction={(options) => action && beginAction(action.kind, selectedTerritory.id, undefined, options)}
             />
           )}
         </section>
@@ -130,11 +130,40 @@ function MissionDock({ snapshot, me, defense, homePending, busy, beginAction, re
   defense?: Attack;
   homePending: boolean;
   busy: boolean;
-  beginAction: (kind: string, state: string, attackId?: string) => void;
+  beginAction: (kind: string, state: string, attackId?: string, options?: { sport?: string; wager?: boolean }) => void;
   refill: () => void;
 }) {
   if (defense) {
-    return <div className={`${styles.missionDock} ${styles.missionDanger}`}><div><span>UNDER ATTACK · {timeLeft(defense.defense_deadline)}</span><h2>Defend {STATE_NAMES[defense.territory_id]}</h2><p>One answer decides who owns it. Defending never spends a move.</p></div><button disabled={busy} onClick={() => beginAction("defend", defense.territory_id, defense.id)}>Defend now</button></div>;
+    // Defender's choice: in a multi-sport league the defender may pick the
+    // sport they want to be quizzed on; plain "Defend now" keeps the usual
+    // mixed order. The server validates the sport against the league.
+    const sports = snapshot.group.sports ?? [];
+    return (
+      <div className={`${styles.missionDock} ${styles.missionDanger}`}>
+        <div>
+          <span>UNDER ATTACK · {timeLeft(defense.defense_deadline)}</span>
+          <h2>Defend {STATE_NAMES[defense.territory_id]}</h2>
+          <p>One answer decides who owns it. Defending never spends a move.{sports.length > 1 ? " Pick your strongest sport, or take it as it comes." : ""}</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <button disabled={busy} onClick={() => beginAction("defend", defense.territory_id, defense.id)}>Defend now</button>
+          {sports.length > 1 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {sports.map((sport) => (
+                <button
+                  key={sport}
+                  disabled={busy}
+                  style={{ fontSize: 12, padding: "4px 10px" }}
+                  onClick={() => beginAction("defend", defense.territory_id, defense.id, { sport })}
+                >
+                  {sport}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
   if (homePending && me?.home_state) {
     return <div className={styles.missionDock}><div><span>OPENING MOVE</span><h2>Secure {STATE_NAMES[me.home_state]}</h2><p>Answer once to raise your starting garrison.</p></div><button disabled={busy} onClick={() => beginAction("home", me.home_state!)}>Play question</button></div>;
@@ -155,7 +184,7 @@ function TerritorySheet({ territory, owner, currentUser, homeState, action, canT
   actionsRemaining: number;
   busy: boolean;
   onClose: () => void;
-  onAction: () => void;
+  onAction: (options?: { wager?: boolean }) => void;
 }) {
   const mine = territory.owner_id === currentUser;
   const disabled = busy || Boolean(action && isTerritoryActionBlocked({
@@ -179,7 +208,22 @@ function TerritorySheet({ territory, owner, currentUser, homeState, action, canT
       <div className={styles.sheetTitle}><div><span>{territory.region}</span><h2>{STATE_NAMES[territory.id]}</h2></div><div className={styles.stateCode}>{territory.id}</div></div>
       <div className={styles.ownerRow}><span style={{ background: owner ? memberColor(owner) : NEUTRAL }} /><strong>{owner ? mine ? "Your territory" : owner.display_name : "Unclaimed"}</strong><small>Garrison {territory.hold_level}{homeState === territory.id ? " · Home" : ""}</small></div>
       <p className={styles.sheetReason}>{blocked ?? (mine ? "Fortify once per day — it spends a move — to increase the cost of stealing it." : canTarget ? "This state touches your border." : "You do not share a border with this state.")}</p>
-      {action && <button className={`${styles.sheetAction} ${action.danger ? styles.sheetActionDanger : ""}`} disabled={disabled} onClick={onAction}>{action.label}</button>}
+      {action && <button className={`${styles.sheetAction} ${action.danger ? styles.sheetActionDanger : ""}`} disabled={disabled} onClick={() => onAction()}>{action.label}</button>}
+      {action?.kind === "attack" && (
+        <>
+          <button
+            className={`${styles.sheetAction} ${styles.sheetActionDanger}`}
+            disabled={disabled || actionsRemaining < 2}
+            onClick={() => onAction({ wager: true })}
+          >
+            Wager attack · 2 moves
+          </button>
+          <p className={styles.sheetReason}>
+            A wager runs at tier 3, free-fill only — and holding against it earns the
+            defender no garrison. High risk, no consolation prize for them.
+          </p>
+        </>
+      )}
     </aside>
   );
 }

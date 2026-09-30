@@ -25,7 +25,7 @@ export interface GameState {
   notify: (text: string, error?: boolean) => void;
   loadGroups: (preferred?: string | null) => Promise<void>;
   loadSnapshot: (target?: string | null) => Promise<void>;
-  beginAction: (kind: string, state: string, attackId?: string) => Promise<void>;
+  beginAction: (kind: string, state: string, attackId?: string, options?: { sport?: string; wager?: boolean }) => Promise<void>;
   advanceGroupDay: (days?: number) => Promise<void>;
 }
 
@@ -163,7 +163,12 @@ export function useGameState(session: Session | null): GameState {
     };
   }, [session, groupId, loadGroups, loadSnapshot]);
 
-  async function beginAction(kind: string, state: string, attackId?: string) {
+  async function beginAction(
+    kind: string,
+    state: string,
+    attackId?: string,
+    options?: { sport?: string; wager?: boolean },
+  ) {
     if (!snapshot?.season) return;
     setBusy(true);
     const { data, error } = await supabase.rpc("game_begin_action", {
@@ -171,6 +176,8 @@ export function useGameState(session: Session | null): GameState {
       p_territory_id: state,
       p_action_type: kind,
       p_attack_id: attackId ?? null,
+      p_sport: options?.sport ?? null,
+      p_wager: options?.wager ?? false,
     });
     setBusy(false);
     if (error) {

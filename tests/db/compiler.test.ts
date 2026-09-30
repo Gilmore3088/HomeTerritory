@@ -151,11 +151,11 @@ test("compiler golden run", async (t) => {
   });
 
   await t.test("Gate B: single_source facts are skipped, not compiled", async () => {
-    const { data } = await admin
-      .from("questions")
-      .select("id")
-      .or(`family_key.like.%${id("v-att")}%,family_key.like.%${id("t-dal")}%`);
-    assert.deepEqual(data, [], "nothing about the single_source Cowboys rows may compile");
+    for (const entity of [id("v-att"), id("t-dal")]) {
+      const { data, error } = await admin.from("questions").select("id").like("family_key", `%${entity}%`);
+      assert.equal(error, null, error?.message ?? "");
+      assert.deepEqual(data, [], `nothing about single_source ${entity} may compile`);
+    }
     assert.ok(summary.skipped_unverified >= 2, `unverified skips should be counted: ${JSON.stringify(summary)}`);
   });
 

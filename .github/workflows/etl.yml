@@ -54,6 +54,9 @@ jobs:
       - name: Careers and aliases
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
         run: npm run etl -- wikidata-enrich
+      - name: Current-season finals (ESPN)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- espn-events
       - name: Refresh derived links and compile questions
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
         run: npm run etl -- refresh-and-compile
@@ -63,3 +66,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ETL_ANTHROPIC_API_KEY }}
         # Skips itself with a notice when the key secret is not configured.
         run: node --experimental-strip-types etl/gate-c.ts
+      - name: Freshness report
+        if: ${{ always() && (github.event_name != 'workflow_dispatch' || inputs.job == '') }}
+        # Writes the per-source table to the run summary and fails the
+        # workflow when a nightly source is failing or stale -- the alert.
+        run: npm run etl -- report

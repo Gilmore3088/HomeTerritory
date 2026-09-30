@@ -6,14 +6,30 @@
 //   wikidata-enrich          careers + aliases for ingested athletes
 //   lahman <dir>             seed from an unzipped Lahman CSV directory
 //   nflverse-draft <file>    seed from nflverse draft_picks.csv
+//   espn-events [days]       current-season finals into facts.events
+//   report                   freshness dashboard; fails on stale sources
 // Environment: SUPABASE_URL + SUPABASE_SECRET_KEY (ETL_DRY_RUN=1 to print).
+import { appendFileSync } from "node:fs";
 import { factsClient, logRun, publicClient, readEnv } from "./lib/db.ts";
 import { ingestTeamsAndVenues } from "./sources/wikidata-teams.ts";
 import { ingestAthletes } from "./sources/wikidata-athletes.ts";
 import { ingestChampionships } from "./sources/wikidata-championships.ts";
 import { enrichAthletes } from "./sources/wikidata-enrich.ts";
+import { ingestEspnEvents } from "./sources/espn-events.ts";
 import { seedLahman } from "./seeds/lahman.ts";
 import { seedNflverseDraft } from "./seeds/nflverse-draft.ts";
+
+// The nightly set: a source here whose last run failed, or whose last
+// success is older than two days, fails the freshness report (and with it
+// the workflow, which is the alert).
+const NIGHTLY_SOURCES = [
+  "wikidata-teams",
+  "wikidata-championships",
+  "wikidata-athletes",
+  "wikidata-enrich",
+  "espn-events",
+  "refresh-and-compile",
+];
 
 const [job, arg] = process.argv.slice(2);
 const env = readEnv();
@@ -41,6 +57,47 @@ async function main(): Promise<void> {
       if (!arg) throw new Error("usage: etl/run.ts nflverse-draft <draft_picks.csv>");
       await logRun(client, "nflverse-draft", env.dryRun, () => seedNflverseDraft(client, arg, env.dryRun));
       return;
+    case "espn-events":
+      await logRun(client, "espn-events", env.dryRun, () => ingestEspnEvents(client, env.dryRun, arg ? Number(arg) : 2));
+      return;
+    case "report": {
+      // Freshness dashboard: per-source last run, rows, age. Written to the
+      // workflow summary when GitHub provides one; a failed or stale
+      // nightly source fails this job, which is the alert.
+      const runs = await client
+        .from("etl_runs")
+        .select("source, started_at, finished_at, rows_upserted, ok, error")
+        .order("started_at", { ascending: false })
+        .limit(200);
+      if (runs.error) throw new Error(`reading etl_runs failed: ${runs.error.message}`);
+      const latest = new Map<string, { started_at: string; ok: boolean | null; rows_upserted: number | null; error: string | null }>();
+      const latestOk = new Map<string, string>();
+      for (const run of (runs.data ?? []) as Array<{ source: string; started_at: string; ok: boolean | null; rows_upserted: number | null; error: string | null }>) {
+        if (!latest.has(run.source)) latest.set(run.source, run);
+        if (run.ok && !latestOk.has(run.source)) latestOk.set(run.source, run.started_at);
+      }
+      const lines = ["| source | last run | ok | rows | note |", "|---|---|---|---|---|"];
+      const failures: string[] = [];
+      for (const source of new Set([...NIGHTLY_SOURCES, ...latest.keys()])) {
+        const run = latest.get(source);
+        const nightly = NIGHTLY_SOURCES.includes(source);
+        if (!run) {
+          lines.push(`| ${source} | never | — | — | ${nightly ? "awaiting first nightly run" : "manual seed"} |`);
+          continue;
+        }
+        const ageHours = (Date.now() - new Date(latestOk.get(source) ?? 0).getTime()) / 3_600_000;
+        const stale = nightly && (!run.ok || ageHours > 48);
+        if (stale) failures.push(`${source}: ${run.ok ? `last success ${Math.round(ageHours)}h ago` : run.error ?? "failed"}`);
+        lines.push(`| ${source} | ${run.started_at} | ${run.ok ? "yes" : "NO"} | ${run.rows_upserted ?? ""} | ${stale ? "STALE" : ""} |`);
+      }
+      const table = lines.join("\n");
+      console.log(table);
+      if (process.env.GITHUB_STEP_SUMMARY) {
+        appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Facts warehouse freshness\n\n${table}\n`);
+      }
+      if (failures.length) throw new Error(`stale or failing sources: ${failures.join("; ")}`);
+      return;
+    }
     case "refresh-and-compile": {
       // The whole nightly pipeline runs in-database (service-role RPCs):
       // rebuild derived links, recompile the catalog, apply the telemetry

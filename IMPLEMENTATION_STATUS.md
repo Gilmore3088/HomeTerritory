@@ -157,9 +157,18 @@ suites extended (`compiler`, `norepeat`, `ops`, `review`, `pvp`).
   server-graded and timed, bonus paid once into the season score, with
   its own leaderboard strip on standings.
 
-Deliberately deferred from P3e (backlogged, in the plan doc): freshness
-dashboard, current-season incremental sources (needs CFBD/balldontlie
-keys), and the data-sources attribution page.
+- **P3e — ops hardening (keyless parts).** Nightly freshness report
+  (per-source last run/rows/age into the workflow summary; a failing or
+  48h-stale nightly source fails the workflow — that is the alert);
+  `espn-events` ingester feeding `facts.events` with current-season
+  finals (always `single_source`, Gate-B-quarantined until an official
+  source cross-verifies); the `/sources` attribution page (Retrosheet
+  notice verbatim); picker load check at 100k questions (~9ms stage 1 on
+  the existing index, no schema change needed).
+
+Still deferred (owner keys required): CFBD and balldontlie incremental
+sources, and promoting ESPN events via MLB statsapi / NHL api-web
+cross-verification.
 
 New owner actions on deploy: expose the `facts` schema in the production
 API settings (Dashboard → API → Exposed schemas, mirroring

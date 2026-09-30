@@ -69,6 +69,20 @@ The nightly `refresh-and-compile` step also runs the operating gates
   `pool_thin` counts from `public.serving_events`) for checking where the
   bank runs thin: `select * from question_coverage()` in the SQL editor.
 
+## Current-season events + freshness
+
+`espn-events [days]` (nightly; default yesterday+today) pulls completed
+games for the four majors from ESPN's keyless site JSON into
+`facts.events` — always `single_source`, so Gate B keeps them out of
+compiled questions until an official source (MLB statsapi / NHL api-web,
+backlog) cross-verifies. International venues are skipped. `report` prints
+the per-source freshness table (and writes it to the GitHub run summary);
+it exits nonzero when a nightly source's last run failed or its last
+success is older than 48 hours, which fails the workflow — that is the
+alert. Load check (2026-09-30): the serving picker's stage-1 query runs in
+~9ms against 100k active questions with a 1,500-family lifetime ledger,
+on the existing `questions_picker_idx`.
+
 ## Gate C (advisory LLM review)
 
 `node --experimental-strip-types etl/gate-c.ts [batch]` asks Claude to

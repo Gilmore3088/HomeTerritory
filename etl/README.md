@@ -99,3 +99,17 @@ fixtures snapshotted from the live sources -- `etl/fixtures/draft_picks.sample.c
 is a slice of the real nflverse release chosen to exercise every
 franchise-era boundary. No network or database in unit tests; the DB suite
 (`tests/db/facts.test.ts`) proves the warehouse's privilege walls.
+
+## Cross-verification and prominence
+
+`refresh-and-compile` now calls `public.cross_verify_facts()` before
+compiling: Wikidata athletes and Lahman athletes that match uniquely
+(normalized name + exact birth date, or debut years within two) and agree
+promote each other to `cross_verified`; disagreements and ambiguous names
+land in `facts.fact_conflicts` instead and are never promoted. World
+Series titles cross-check by year between the two sources the same way.
+`wikipedia-prominence [n]` (nightly, default 400) re-scores the stalest
+athletes: enwiki titles resolve from QIDs by SPARQL (never guessed from
+names), the 12-month pageview median (partial current month dropped)
+blends with sitelinks and accolades into `facts.prominence.score`, and
+signals record `pv_median`/`pv_as_of` for audit.

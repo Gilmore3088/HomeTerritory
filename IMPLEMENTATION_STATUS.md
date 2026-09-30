@@ -133,8 +133,17 @@ suites extended (`compiler`, `norepeat`, `ops`, `review`, `pvp`).
   leaks, distractors an `answer_matches` grader could accept), Gate B
   (only gold/cross-verified facts compile), idempotent by
   `(template_id, family_key)`, retirement never resurrected. Template
-  catalog v1: 22 templates with co-tenancy exclusion, unambiguity margins
-  on comparisons (verified comparators only), golden tests in CI.
+  catalog v1+v1.1: 26 templates with co-tenancy exclusion, unambiguity
+  margins on comparisons (verified comparators only), smart-article
+  phrasing ("Super Bowl 50" vs "the 2004 World Series"), golden tests in
+  CI. cross_verify_facts() runs nightly before compiling: unique-match
+  agreement between Wikidata and Lahman promotes both rows to
+  cross_verified with sources recorded; disagreement or an ambiguous name
+  files fact_conflicts (value_conflict / unresolved_entity) instead, once
+  per unresolved issue. The Wikipedia-pageviews prominence scorer
+  (wikipedia-prominence, nightly) re-scores the stalest athletes: 12-month
+  pageview median (partial month dropped, titles resolved by QID via
+  SPARQL) blended with sitelinks and accolades.
 - **P3b ops.** `question_coverage()` (state × tier × format map with
   pool-thin telemetry), `retire_flagged_questions()` (live pass-rate
   gate), `starter_bank_cutover()` (500/state floor), Gate D canary weight

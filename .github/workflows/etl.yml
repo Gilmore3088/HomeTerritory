@@ -57,6 +57,9 @@ jobs:
       - name: Current-season finals (ESPN)
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
         run: npm run etl -- espn-events
+      - name: Prominence re-scoring (Wikipedia pageviews)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
+        run: npm run etl -- wikipedia-prominence
       - name: Refresh derived links and compile questions
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.job == '' }}
         run: npm run etl -- refresh-and-compile

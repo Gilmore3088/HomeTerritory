@@ -7,6 +7,7 @@
 //   lahman <dir>             seed from an unzipped Lahman CSV directory
 //   nflverse-draft <file>    seed from nflverse draft_picks.csv
 //   espn-events [days]       current-season finals into facts.events
+//   wikipedia-prominence [n] re-score the stalest n athletes' prominence
 //   report                   freshness dashboard; fails on stale sources
 // Environment: SUPABASE_URL + SUPABASE_SECRET_KEY (ETL_DRY_RUN=1 to print).
 import { appendFileSync } from "node:fs";
@@ -16,6 +17,7 @@ import { ingestAthletes } from "./sources/wikidata-athletes.ts";
 import { ingestChampionships } from "./sources/wikidata-championships.ts";
 import { enrichAthletes } from "./sources/wikidata-enrich.ts";
 import { ingestEspnEvents } from "./sources/espn-events.ts";
+import { scoreProminence } from "./sources/wikipedia-prominence.ts";
 import { seedLahman } from "./seeds/lahman.ts";
 import { seedNflverseDraft } from "./seeds/nflverse-draft.ts";
 
@@ -28,6 +30,7 @@ const NIGHTLY_SOURCES = [
   "wikidata-athletes",
   "wikidata-enrich",
   "espn-events",
+  "wikipedia-prominence",
   "refresh-and-compile",
 ];
 
@@ -59,6 +62,9 @@ async function main(): Promise<void> {
       return;
     case "espn-events":
       await logRun(client, "espn-events", env.dryRun, () => ingestEspnEvents(client, env.dryRun, arg ? Number(arg) : 2));
+      return;
+    case "wikipedia-prominence":
+      await logRun(client, "wikipedia-prominence", env.dryRun, () => scoreProminence(client, env.dryRun, arg ? Number(arg) : 400));
       return;
     case "report": {
       // Freshness dashboard: per-source last run, rows, age. Written to the
@@ -108,6 +114,8 @@ async function main(): Promise<void> {
         if (env.dryRun) return 0;
         const links = await rpc.rpc("refresh_derived");
         if (links.error) throw new Error(`refresh_derived failed: ${links.error.message}`);
+        const verified = await rpc.rpc("cross_verify_facts");
+        if (verified.error) throw new Error(`cross_verify_facts failed: ${verified.error.message}`);
         const compiled = await rpc.rpc("compile_questions");
         if (compiled.error) throw new Error(`compile_questions failed: ${compiled.error.message}`);
         const retired = await rpc.rpc("retire_flagged_questions");
@@ -116,8 +124,9 @@ async function main(): Promise<void> {
         if (cutover.error) throw new Error(`starter_bank_cutover failed: ${cutover.error.message}`);
         const summary = compiled.data as { written?: number } | null;
         console.log(
-          `derived links: ${JSON.stringify(links.data)}; compile: ${JSON.stringify(summary)}; ` +
-          `retired: ${JSON.stringify(retired.data)}; cutover: ${JSON.stringify(cutover.data)}`,
+          `derived links: ${JSON.stringify(links.data)}; cross-verify: ${JSON.stringify(verified.data)}; ` +
+          `compile: ${JSON.stringify(summary)}; retired: ${JSON.stringify(retired.data)}; ` +
+          `cutover: ${JSON.stringify(cutover.data)}`,
         );
         return summary?.written ?? 0;
       });

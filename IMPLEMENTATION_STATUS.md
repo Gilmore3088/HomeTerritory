@@ -113,3 +113,50 @@ Vercel/auth wiring: VAPID keys (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
 `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`) to enable push alerts, and the
 `ALLOWED_ORIGINS` secret on the `test-signup` edge function to scope its
 CORS.
+
+## Phase 3 (Trivia depth — the question factory): complete
+
+Design: `docs/superpowers/specs/2026-09-30-p3-trivia-depth-design.md`; plan:
+`docs/superpowers/plans/2026-09-30-p3-trivia-depth.md`. Built on the branch's
+seven `202609301*`/`202609300*` migrations plus `etl/`, all verified against a
+scratch Postgres 16 running the full migration chain from zero, with the DB
+suites extended (`compiler`, `norepeat`, `ops`, `review`, `pvp`).
+
+- **P3a — facts warehouse + ETL.** Service-role-only `facts` schema (17
+  tables, provenance on every row, `facts_privilege_audit()` leak guard in
+  CI); `etl/` harness with Wikidata (teams/venues/championships/athletes/
+  enrichment, live-verified query shapes, pinned 50-state QID map with
+  drift abort), Lahman and nflverse-draft seeds (era-correct franchise
+  mapping derived from the real data), nightly `etl.yml`.
+- **P3b — question compiler.** In-database `compile_questions()`:
+  templates-as-data × facts → `public.questions`, Gate A lint (answer
+  leaks, distractors an `answer_matches` grader could accept), Gate B
+  (only gold/cross-verified facts compile), idempotent by
+  `(template_id, family_key)`, retirement never resurrected. Template
+  catalog v1: 22 templates with co-tenancy exclusion, unambiguity margins
+  on comparisons (verified comparators only), golden tests in CI.
+- **P3b ops.** `question_coverage()` (state × tier × format map with
+  pool-thin telemetry), `retire_flagged_questions()` (live pass-rate
+  gate), `starter_bank_cutover()` (500/state floor), Gate D canary weight
+  in the picker, `etl/gate-c.ts` advisory Claude review filing
+  `gate_c_flag` conflicts.
+- **P3c — serving + review.** Lifetime no-repeat by question family
+  (`user_question_history`, written on every serve; fallback stages
+  logged to `serving_events`); reviewer role (`profiles.is_reviewer`),
+  `review_queue`/`review_decide` RPCs and the `/review` page.
+- **P3d — PvP depth.** `pvp_ledger` rivalry history across seasons and
+  groups (`pvp_rivalries()` on standings), defender's choice
+  (`p_sport` on defend), wager attacks (2 moves, tier-3 free-fill, no
+  garrison on a successful defense), and season awards in the recap
+  (Best Defender, Sharpest Sport, Fastest Gun, Upset, Rivalry).
+
+Deliberately deferred from P3d/P3e (backlogged, in the plan doc): live
+duels (Realtime presence), the daily gauntlet, freshness dashboard,
+current-season incremental sources, and the attribution page.
+
+New owner actions on deploy: expose the `facts` schema in the production
+API settings (Dashboard → API → Exposed schemas, mirroring
+`supabase/config.toml`); add `ETL_SUPABASE_URL` + `ETL_SUPABASE_SECRET_KEY`
+Actions secrets (nightly ETL), optionally `ETL_ANTHROPIC_API_KEY` (Gate C);
+flip `profiles.is_reviewer` for whoever reviews questions; run the Lahman
+and nflverse seed jobs once by hand (`etl/README.md`).

@@ -34,6 +34,7 @@ async function seedWarehouse(): Promise<void> {
     { id: id("t-kc"), league: "NFL", name: "Kansas City Chiefs", city: "Kansas City", state: "MO", founded: 1960, ...src },
     { id: id("t-chi"), league: "NFL", name: "Chicago Bears", city: "Chicago", state: "IL", founded: 1920, ...src },
     { id: id("t-ind"), league: "NFL", name: "Indianapolis Colts", city: "Indianapolis", state: "IN", founded: 1953, ...src },
+    { id: id("t-az"), league: "NFL", name: "Arizona Cardinals", city: "Glendale", state: "AZ", founded: 1920, ...src },
     // Gate B case: everything about the Cowboys is single_source here, so
     // no template may compile anything from these rows.
     { id: id("t-dal"), league: "NFL", name: "Dallas Cowboys", city: "Arlington", state: "TX", founded: 1960, source: "test", confidence: "single_source" },
@@ -41,24 +42,39 @@ async function seedWarehouse(): Promise<void> {
 
   const venues = [
     { id: id("v-gillette"), name: "Gillette Stadium", city: "Foxborough", state: "MA", capacity: 64628, opened: 2002,
+      latitude: 42.09,
       tenants: [{ team_id: id("t-ne"), team_name: "New England Patriots", league: "NFL" }], ...src },
     { id: id("v-superdome"), name: "Caesars Superdome", city: "New Orleans", state: "LA", capacity: 73208, opened: 1975,
+      latitude: 29.95,
       tenants: [{ team_id: id("t-no"), team_name: "New Orleans Saints", league: "NFL" }], ...src },
     // Shared-building case: two truthful NFL answers, must not compile.
     { id: id("v-metlife"), name: "MetLife Stadium", city: "East Rutherford", state: "NJ", capacity: 82500, opened: 2010,
+      latitude: 40.81,
       tenants: [
         { team_id: id("t-nyg"), team_name: "New York Giants", league: "NFL" },
         { team_id: id("t-nyj"), team_name: "New York Jets", league: "NFL" },
       ], ...src },
     { id: id("v-arrowhead"), name: "Arrowhead Stadium", city: "Kansas City", state: "MO", capacity: 76416, opened: 1972,
+      latitude: 39.05,
       tenants: [{ team_id: id("t-kc"), team_name: "Kansas City Chiefs", league: "NFL" }], ...src },
     { id: id("v-soldier"), name: "Soldier Field", city: "Chicago", state: "IL", capacity: 61500, opened: 1924,
+      latitude: 41.86,
       tenants: [{ team_id: id("t-chi"), team_name: "Chicago Bears", league: "NFL" }], ...src },
+    { id: id("v-statefarm"), name: "State Farm Stadium", city: "Glendale", state: "AZ", capacity: 63400, opened: 2006,
+      latitude: 33.53,
+      tenants: [{ team_id: id("t-az"), team_name: "Arizona Cardinals", league: "NFL" }], ...src },
     // Gate B case, venue side.
     { id: id("v-att"), name: "AT&T Stadium", city: "Arlington", state: "TX", capacity: 80000, opened: 2009,
+      latitude: 32.75,
       tenants: [{ team_id: id("t-dal"), team_name: "Dallas Cowboys", league: "NFL" }],
       source: "test", confidence: "single_source" },
   ].map((v) => ({ ...v, source_key: v.id }));
+
+  const championships = [
+    { id: id("ch-sb36"), league: "NFL", season: "Super Bowl XXXVI", year: 2002,
+      winner_team_id: id("t-ne"), winner_name: "New England Patriots",
+      runner_up_name: "St. Louis Rams", mvp_name: "Tom Brady", ...src, source_key: id("ch-sb36") },
+  ];
 
   const drafts = [
     { id: id("d-1998-1"), league: "NFL", year: 1998, round: 1, overall_pick: 1, player_name: "Peyton Manning", team_name: "Indianapolis Colts", college: "Tennessee", ...src },
@@ -70,7 +86,7 @@ async function seedWarehouse(): Promise<void> {
   ].map((d) => ({ ...d, source_key: d.id }));
 
   const seeds: Array<[string, Record<string, unknown>[]]> = [
-    ["teams", teams], ["venues", venues], ["drafts", drafts],
+    ["teams", teams], ["venues", venues], ["drafts", drafts], ["championships", championships],
   ];
   for (const [table, rows] of seeds) {
     const { error } = await factsAdmin.from(table).upsert(rows, { onConflict: "id" });
@@ -81,7 +97,7 @@ async function seedWarehouse(): Promise<void> {
 async function cleanUp(): Promise<void> {
   await admin.from("questions").delete().like("family_key", `%${MARK}%`);
   await factsAdmin.from("state_links").delete().like("entity_id", `${MARK}%`);
-  for (const table of ["drafts", "venues", "teams"]) {
+  for (const table of ["drafts", "championships", "venues", "teams"]) {
     await factsAdmin.from(table).delete().like("id", `${MARK}%`);
   }
 }
@@ -184,6 +200,44 @@ test("compiler golden run", async (t) => {
     const player = ff.data as { correct_answer: string; aliases: string[] };
     assert.equal(player.correct_answer, "Peyton Manning");
     assert.ok(player.aliases.includes("Manning"), "a bare surname must be an accepted answer");
+  });
+
+  await t.test("v1.1 goldens: runner-up, MVP with smart article, margin-safe geography", async () => {
+    const runnerUp = await admin
+      .from("questions")
+      .select("question_text, correct_answer, options")
+      .eq("family_key", `championship-runnerup-mc:${id("ch-sb36")}`)
+      .single();
+    assert.equal(runnerUp.error, null, "the runner-up question should compile");
+    const ru = runnerUp.data as { question_text: string; correct_answer: string; options: string[] };
+    assert.equal(ru.question_text, "Who did the New England Patriots beat in Super Bowl XXXVI?",
+      "Super Bowl labels take no article");
+    assert.equal(ru.correct_answer, "St. Louis Rams");
+    assert.ok(!ru.options.includes("New England Patriots"), "the winner is in the text, never an option");
+
+    const mvp = await admin
+      .from("questions")
+      .select("question_text, correct_answer, aliases")
+      .eq("family_key", `championship-mvp-ff:${id("ch-sb36")}`)
+      .single();
+    assert.equal(mvp.error, null);
+    const m = mvp.data as { question_text: string; correct_answer: string; aliases: string[] };
+    assert.equal(m.question_text, "Who was named MVP of Super Bowl XXXVI?");
+    assert.equal(m.correct_answer, "Tom Brady");
+    assert.ok(m.aliases.includes("Brady"));
+
+    const north = await admin
+      .from("questions")
+      .select("correct_answer, options")
+      .eq("family_key", `venue-northernmost-compare-mc:${id("v-gillette")}`)
+      .single();
+    assert.equal(north.error, null, "Gillette clears the 1.5-degree margin over three verified venues");
+    const n = north.data as { correct_answer: string; options: string[] };
+    assert.equal(n.correct_answer, "Gillette Stadium");
+    for (const nearTie of ["Soldier Field", "MetLife Stadium", "AT&T Stadium"]) {
+      assert.ok(!n.options.includes(nearTie),
+        `${nearTie} is inside the margin or unverified and must never be an option`);
+    }
   });
 
   await t.test("recompiling is idempotent and honors retirement", async () => {

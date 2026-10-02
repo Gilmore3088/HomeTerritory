@@ -82,5 +82,15 @@ begin
   elsif v_err like '%already settled%' then raise notice 'PASS home re-roll blocked after timeout';
   else raise exception 'unexpected error: %', v_err; end if;
 
+  -- Question recycling: once this player has seen every active WA question,
+  -- a new WA session recycles the least recently served one instead of failing.
+  insert into public.season_question_seen(season_id, question_id, served_to)
+  select v_season, qq.id, u1 from public.questions qq
+  where qq.territory_id = 'WA' and qq.active
+  on conflict do nothing;
+  v_res2 := public.game_begin_action(v_season, 'WA', 'fortify', null);
+  if v_res2->'question'->>'attempt_id' is null then raise exception 'FAIL recycle did not serve a question'; end if;
+  raise notice 'PASS exhausted state recycles questions';
+
   raise notice 'ALL ENGINE TESTS PASSED';
 end $$;

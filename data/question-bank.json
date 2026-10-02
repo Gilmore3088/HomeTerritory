@@ -1,0 +1,355 @@
+{
+  "comment": "Curated sports trivia bank, 5 questions per state: one tier-1 multiple choice, two tier-2 multiple choice, two tier-3 free-fill. Facts chosen for verifiability (championships, records, hometowns, canon moments).",
+  "questions": {
+    "AL": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "The Alabama Crimson Tide compete in which conference?", "o": ["SEC", "Big Ten", "ACC", "Big 12"], "a": "SEC"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which coach won six national championships at Alabama between 2009 and 2020?", "o": ["Nick Saban", "Gene Stallings", "Urban Meyer", "Dabo Swinney"], "a": "Nick Saban"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which quarterback led Auburn to the 2010 BCS national championship?", "o": ["Cam Newton", "Jason Campbell", "Bo Nix", "Nick Marshall"], "a": "Cam Newton"},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Name the legendary Alabama coach known for his houndstooth hat and 323 career wins.", "a": "Paul Bear Bryant", "al": ["Bear Bryant", "Bryant", "Paul Bryant"]},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Which Alabama receiver won the 2020 Heisman Trophy?", "a": "DeVonta Smith", "al": ["Smith", "Devonta Smith"]}
+    ],
+    "AK": [
+      {"t": 1, "f": "mc", "sport": "OTH", "q": "The Alaska Nanooks are best known for competing in which NCAA sport?", "o": ["Ice hockey", "Football", "Baseball", "Lacrosse"], "a": "Ice hockey"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which three-time World Series champion pitcher was born in Anchorage?", "o": ["Curt Schilling", "Randy Johnson", "Jon Lester", "Tom Glavine"], "a": "Curt Schilling"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which NBA champion forward grew up in Juneau, Alaska?", "o": ["Carlos Boozer", "Paul Millsap", "Al Horford", "David West"], "a": "Carlos Boozer"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the Anchorage-raised NFL guard who won three Super Bowls with Washington and Denver.", "a": "Mark Schlereth", "al": ["Schlereth"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "What famous long-distance sled dog race runs from Anchorage to Nome?", "a": "Iditarod", "al": ["The Iditarod", "Iditarod Trail Sled Dog Race"]}
+    ],
+    "AZ": [
+      {"t": 1, "f": "mc", "sport": "MLB", "q": "Which Arizona team won the 2001 World Series?", "o": ["Arizona Diamondbacks", "Arizona Cardinals", "Phoenix Suns", "Arizona Coyotes"], "a": "Arizona Diamondbacks"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Whose walk-off hit off Mariano Rivera won Game 7 of the 2001 World Series?", "o": ["Luis Gonzalez", "Craig Counsell", "Mark Grace", "Matt Williams"], "a": "Luis Gonzalez"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Suns forward won the 1993 NBA MVP award?", "o": ["Charles Barkley", "Kevin Johnson", "Dan Majerle", "Steve Nash"], "a": "Charles Barkley"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the Cardinals safety who left the NFL in 2002 to enlist in the U.S. Army.", "a": "Pat Tillman", "al": ["Tillman"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which quarterback led the Cardinals to Super Bowl XLIII?", "a": "Kurt Warner", "al": ["Warner"]}
+    ],
+    "AR": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "What chant do Arkansas Razorbacks fans use to call the Hogs?", "o": ["Woo Pig Sooie", "Roll Tide", "War Eagle", "Boomer Sooner"], "a": "Woo Pig Sooie"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which NFL owner played on Arkansas's 1964 national championship team?", "o": ["Jerry Jones", "Robert Kraft", "Stan Kroenke", "Arthur Blank"], "a": "Jerry Jones"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which six-time NBA champion from Hamburg, Arkansas played at Central Arkansas?", "o": ["Scottie Pippen", "Horace Grant", "Dennis Rodman", "Ron Harper"], "a": "Scottie Pippen"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Arkansas golfer who won the 1991 PGA Championship as the ninth alternate.", "a": "John Daly", "al": ["Daly"]},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Which Razorbacks running back won the Doak Walker Award twice and was the 2008 NFL draft's fourth pick?", "a": "Darren McFadden", "al": ["McFadden"]}
+    ],
+    "CA": [
+      {"t": 1, "f": "mc", "sport": "NBA", "q": "Which NBA team set the regular-season wins record at 73-9 in 2015-16?", "o": ["Golden State Warriors", "Los Angeles Lakers", "Sacramento Kings", "LA Clippers"], "a": "Golden State Warriors"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Who hit the injured-leg, walk-off homer for the Dodgers in Game 1 of the 1988 World Series?", "o": ["Kirk Gibson", "Steve Sax", "Mike Scioscia", "Orel Hershiser"], "a": "Kirk Gibson"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which Padres legend won eight National League batting titles?", "o": ["Tony Gwynn", "Dave Winfield", "Steve Garvey", "Trevor Hoffman"], "a": "Tony Gwynn"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the 49ers quarterback who went 4-0 in Super Bowls.", "a": "Joe Montana", "al": ["Montana"]},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Which Lakers center scored 38,387 career points, the record Kareem held until 2023 — full name, please.", "a": "Kareem Abdul-Jabbar", "al": ["Kareem", "Abdul-Jabbar", "Abdul Jabbar"]}
+    ],
+    "CO": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "What is the nickname of Denver's NFL stadium's famous altitude advantage?", "o": ["Mile High", "Sky High", "Rocky Top", "Thin Air"], "a": "Mile High"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which quarterback won back-to-back Super Bowls with the Broncos in the late 1990s?", "o": ["John Elway", "Peyton Manning", "Jake Plummer", "Brian Griese"], "a": "John Elway"},
+      {"t": 2, "f": "mc", "sport": "NHL", "q": "The Colorado Avalanche won the Stanley Cup in their first Denver season. What year?", "o": ["1996", "1994", "1999", "2001"], "a": "1996"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Rockies first baseman whose No. 17 was the first number the franchise retired.", "a": "Todd Helton", "al": ["Helton"]},
+      {"t": 3, "f": "ff", "sport": "NHL", "q": "Which Avalanche captain lifted both the 1996 and 2001 Stanley Cups?", "a": "Joe Sakic", "al": ["Sakic"]}
+    ],
+    "CT": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "UConn's men won back-to-back national titles in 2023 and 2024 under which coach?", "o": ["Dan Hurley", "Jim Calhoun", "Kevin Ollie", "Bobby Hurley"], "a": "Dan Hurley"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Who has coached the UConn women's program since 1985?", "o": ["Geno Auriemma", "Pat Summitt", "Muffet McGraw", "Tara VanDerveer"], "a": "Geno Auriemma"},
+      {"t": 2, "f": "mc", "sport": "NHL", "q": "Hartford's NHL team left Connecticut in 1997. What were they called?", "o": ["Whalers", "Nordiques", "Americans", "Mariners"], "a": "Whalers"},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Name the guard who carried UConn on an 11-game postseason run to the 2011 title.", "a": "Kemba Walker", "al": ["Kemba", "Walker"]},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Which UConn star was the top pick of the 2025 WNBA draft?", "a": "Paige Bueckers", "al": ["Bueckers"]}
+    ],
+    "DE": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "What is the University of Delaware's football nickname?", "o": ["Fightin' Blue Hens", "Terrapins", "Owls", "Tigers"], "a": "Fightin' Blue Hens"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which Super Bowl XLVII MVP quarterback played college ball at Delaware?", "o": ["Joe Flacco", "Nick Foles", "Carson Wentz", "Eli Manning"], "a": "Joe Flacco"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which Delaware alum won the 2002 NFL MVP with the Raiders?", "o": ["Rich Gannon", "Jeff Hostetler", "Daryle Lamonica", "Ken Stabler"], "a": "Rich Gannon"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Delaware native and Blue Hens star who became a WNBA MVP with Chicago and Washington.", "a": "Elena Delle Donne", "al": ["Delle Donne"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Joe Flacco's Super Bowl MVP came in which Super Bowl (number or team beaten)?", "a": "XLVII", "al": ["47", "Super Bowl XLVII", "49ers", "San Francisco"]}
+    ],
+    "FL": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "Which Florida team completed the NFL's only perfect season in 1972?", "o": ["Miami Dolphins", "Tampa Bay Buccaneers", "Jacksonville Jaguars", "Orlando Renegades"], "a": "Miami Dolphins"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Who became the first sophomore to win the Heisman Trophy, at Florida in 2007?", "o": ["Tim Tebow", "Danny Wuerffel", "Steve Spurrier", "Percy Harvin"], "a": "Tim Tebow"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "The Marlins won the World Series in 2003 and which other year?", "o": ["1997", "1993", "2000", "2008"], "a": "1997"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the Dolphins quarterback who retired holding nearly every passing record but never won a Super Bowl.", "a": "Dan Marino", "al": ["Marino"]},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Which Florida State quarterback won the 1993 Heisman and then played point guard for the Knicks?", "a": "Charlie Ward", "al": ["Ward"]}
+    ],
+    "GA": [
+      {"t": 1, "f": "mc", "sport": "MLB", "q": "Hank Aaron hit his record-breaking 715th home run in 1974 playing for which team?", "o": ["Atlanta Braves", "Milwaukee Brewers", "New York Mets", "Cincinnati Reds"], "a": "Atlanta Braves"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Georgia won back-to-back national titles in the 2021 and 2022 seasons under which coach?", "o": ["Kirby Smart", "Mark Richt", "Vince Dooley", "Jim Donnan"], "a": "Kirby Smart"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which Georgia running back won the 1982 Heisman Trophy?", "o": ["Herschel Walker", "Garrison Hearst", "Todd Gurley", "Nick Chubb"], "a": "Herschel Walker"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "What infamous lead did the Falcons hold in Super Bowl LI before losing in overtime?", "a": "28-3", "al": ["28 3", "28 to 3", "twenty eight to three"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Braves pitcher who won the 1995 World Series MVP with a one-hit Game 6.", "a": "Tom Glavine", "al": ["Glavine"]}
+    ],
+    "HI": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "What is the University of Hawaii's football nickname?", "o": ["Rainbow Warriors", "Islanders", "Volcanoes", "Wavecrashers"], "a": "Rainbow Warriors"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which record-setting quarterback led Hawaii to the 2008 Sugar Bowl?", "o": ["Colt Brennan", "Marcus Mariota", "Timmy Chang", "Tua Tagovailoa"], "a": "Colt Brennan"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which Honolulu-born golfer won the 2014 U.S. Women's Open?", "o": ["Michelle Wie", "Lydia Ko", "Paula Creamer", "Inbee Park"], "a": "Michelle Wie"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Hawaiian Olympic swimming champion credited with popularizing modern surfing.", "a": "Duke Kahanamoku", "al": ["Duke", "Kahanamoku"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which Honolulu-born quarterback won the 2014 Heisman Trophy?", "a": "Marcus Mariota", "al": ["Mariota"]}
+    ],
+    "ID": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Boise State's home field is famous for what?", "o": ["Blue turf", "Retractable roof", "Grass painted gold", "Playing on dirt"], "a": "Blue turf"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Boise State beat Oklahoma in the 2007 Fiesta Bowl on which trick play two-point conversion?", "o": ["Statue of Liberty", "Flea flicker", "Fumblerooski", "Hook and ladder"], "a": "Statue of Liberty"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which 573-homer Hall of Famer from Payette, Idaho starred for the Twins?", "o": ["Harmon Killebrew", "Rod Carew", "Kirby Puckett", "Tony Oliva"], "a": "Harmon Killebrew"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Idaho-born skier who won Super-G gold at the 1998 Nagano Olympics.", "a": "Picabo Street", "al": ["Picabo", "Street"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Which Boise cyclist won three straight Olympic time-trial golds (2008-2016)?", "a": "Kristin Armstrong", "al": ["Armstrong"]}
+    ],
+    "IL": [
+      {"t": 1, "f": "mc", "sport": "NBA", "q": "How many NBA championships did Michael Jordan win with the Bulls?", "o": ["6", "4", "5", "7"], "a": "6"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "The Cubs' 2016 World Series win ended a drought of how many years?", "o": ["108", "86", "95", "100"], "a": "108"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which team did the White Sox sweep to win the 2005 World Series?", "o": ["Houston Astros", "St. Louis Cardinals", "Boston Red Sox", "Atlanta Braves"], "a": "Houston Astros"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the Bears running back nicknamed 'Sweetness.'", "a": "Walter Payton", "al": ["Payton"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which fearsome Bears linebacker has the NCAA's top linebacker award named after him?", "a": "Dick Butkus", "al": ["Butkus"]}
+    ],
+    "IN": [
+      {"t": 1, "f": "mc", "sport": "OTH", "q": "What famous race is run each May at Indianapolis Motor Speedway?", "o": ["Indianapolis 500", "Daytona 500", "Brickyard 600", "Hoosier Grand Prix"], "a": "Indianapolis 500"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Pacer scored 8 points in 9 seconds to stun the Knicks in the 1995 playoffs?", "o": ["Reggie Miller", "Rik Smits", "Mark Jackson", "Jalen Rose"], "a": "Reggie Miller"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "The last undefeated men's national champion was Indiana in which year?", "o": ["1976", "1981", "1987", "1972"], "a": "1976"},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Name the Hall of Famer from French Lick who led Indiana State to the 1979 title game.", "a": "Larry Bird", "al": ["Bird"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which Colts quarterback was MVP of rain-soaked Super Bowl XLI?", "a": "Peyton Manning", "al": ["Peyton", "Manning"]}
+    ],
+    "IA": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Iowa's in-state football rivalry against Iowa State is called what?", "o": ["Cy-Hawk", "Corn Bowl", "Hawkeye Classic", "Prairie Showdown"], "a": "Cy-Hawk"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Which Iowa guard became NCAA Division I basketball's all-time leading scorer in 2024?", "o": ["Caitlin Clark", "Megan Gustafson", "Luka Garza", "B.J. Armstrong"], "a": "Caitlin Clark"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which wrestling legend won 1972 Olympic gold without surrendering a point, then coached Iowa to 15 team titles?", "o": ["Dan Gable", "Cael Sanderson", "Tom Brands", "John Smith"], "a": "Dan Gable"},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Iowa's stadium honors which 1939 Heisman winner who died in World War II?", "a": "Nile Kinnick", "al": ["Kinnick"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "In what Iowa town is the Field of Dreams ballfield?", "a": "Dyersville", "al": []}
+    ],
+    "KS": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "Which Kansas school's basketball program was first coached by the game's inventor, James Naismith?", "o": ["Kansas Jayhawks", "Kansas State Wildcats", "Wichita State Shockers", "Washburn Ichabods"], "a": "Kansas Jayhawks"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Whose three-pointer forced overtime in Kansas's 2008 title-game win over Memphis?", "o": ["Mario Chalmers", "Sherron Collins", "Brandon Rush", "Darrell Arthur"], "a": "Mario Chalmers"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which Heisman-winning running back grew up in Wichita?", "o": ["Barry Sanders", "Marcus Allen", "Billy Sims", "Mike Rozier"], "a": "Barry Sanders"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the Bears Hall of Famer nicknamed the 'Kansas Comet.'", "a": "Gale Sayers", "al": ["Sayers"]},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Kansas's home arena is named for which long-time coach?", "a": "Phog Allen", "al": ["Allen", "Allen Fieldhouse", "Forrest Allen"]}
+    ],
+    "KY": [
+      {"t": 1, "f": "mc", "sport": "OTH", "q": "The Kentucky Derby is run at which track?", "o": ["Churchill Downs", "Keeneland", "Pimlico", "Belmont Park"], "a": "Churchill Downs"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which horse's 1973 Derby record of 1:59 2/5 still stands?", "o": ["Secretariat", "Seattle Slew", "Affirmed", "Man o' War"], "a": "Secretariat"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Kentucky's Rupp Arena is named after which coach?", "o": ["Adolph Rupp", "Rick Pitino", "Joe B. Hall", "John Calipari"], "a": "Adolph Rupp"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the heavyweight champion from Louisville who won 1960 Olympic gold as Cassius Clay.", "a": "Muhammad Ali", "al": ["Ali", "Cassius Clay"]},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Which unibrowed freshman anchored Kentucky's 2012 national championship team?", "a": "Anthony Davis", "al": ["Davis", "AD"]}
+    ],
+    "LA": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "Which quarterback was MVP of the Saints' Super Bowl XLIV win?", "o": ["Drew Brees", "Archie Manning", "Jameis Winston", "Aaron Brooks"], "a": "Drew Brees"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Which LSU guard averaged an NCAA-record 44.2 points per game?", "o": ["Pete Maravich", "Bob Pettit", "Chris Jackson", "Ben Simmons"], "a": "Pete Maravich"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which quarterback won the 2019 Heisman and led 15-0 LSU to the title?", "o": ["Joe Burrow", "Jayden Daniels", "Matt Mauck", "JaMarcus Russell"], "a": "Joe Burrow"},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "What was Pete Maravich's famous nickname?", "a": "Pistol Pete", "al": ["Pistol", "The Pistol"]},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Which dominant center won a national title culture at LSU before going first overall in the 1992 draft?", "a": "Shaquille O'Neal", "al": ["Shaq", "O'Neal", "Shaquille Oneal"]}
+    ],
+    "ME": [
+      {"t": 1, "f": "mc", "sport": "OTH", "q": "The Maine Black Bears are a traditional power in which college sport?", "o": ["Ice hockey", "Football", "Lacrosse", "Soccer"], "a": "Ice hockey"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which freshman won Maine's first Hobey Baker Award during the 1993 title season?", "o": ["Paul Kariya", "Jimmy Howard", "Scott Pellerin", "Jack Capuano"], "a": "Paul Kariya"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which Mainer won the first women's Olympic marathon in 1984?", "o": ["Joan Benoit", "Mary Decker", "Grete Waitz", "Lynn Jennings"], "a": "Joan Benoit"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Maine won NCAA hockey titles in 1993 and which other year?", "a": "1999", "al": []},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "What Maine stadium-sharing summer league is famous for producing MLB stars using wooden bats? Hint: Cape ___.", "a": "Cape Cod League", "al": ["Cape Cod", "Cape Cod Baseball League"]}
+    ],
+    "MD": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "The Baltimore Ravens take their name from a work by which writer?", "o": ["Edgar Allan Poe", "Mark Twain", "H.L. Mencken", "Frederick Douglass"], "a": "Edgar Allan Poe"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Cal Ripken Jr.'s consecutive-games streak ended at what number?", "o": ["2,632", "2,130", "2,499", "3,001"], "a": "2,632"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which Baltimore swimmer holds the record of 23 Olympic gold medals?", "o": ["Michael Phelps", "Mark Spitz", "Ryan Lochte", "Katie Ledecky"], "a": "Michael Phelps"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the linebacker who won MVP of Super Bowl XXXV for the Ravens.", "a": "Ray Lewis", "al": ["Lewis"]},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Which Baltimore-raised guard led Maryland to its 2002 national championship?", "a": "Juan Dixon", "al": ["Dixon"]}
+    ],
+    "MA": [
+      {"t": 1, "f": "mc", "sport": "NBA", "q": "Which franchise holds the most NBA championships?", "o": ["Boston Celtics", "Los Angeles Lakers", "Chicago Bulls", "Golden State Warriors"], "a": "Boston Celtics"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "The 2004 Red Sox broke the Curse after coming back from what deficit against the Yankees?", "o": ["Down 3-0", "Down 3-1", "Down 2-0", "Down 3-2"], "a": "Down 3-0"},
+      {"t": 2, "f": "mc", "sport": "NHL", "q": "Which Bruin scored the flying Stanley Cup winner in 1970?", "o": ["Bobby Orr", "Phil Esposito", "Ray Bourque", "Cam Neely"], "a": "Bobby Orr"},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Name the Celtics center who won 11 championships in 13 seasons.", "a": "Bill Russell", "al": ["Russell"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "The Boston Marathon is run on which Massachusetts holiday?", "a": "Patriots' Day", "al": ["Patriots Day", "Patriot's Day"]}
+    ],
+    "MI": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "What is the nickname of Michigan Stadium, the largest in the country?", "o": ["The Big House", "The Horseshoe", "Death Valley", "The Swamp"], "a": "The Big House"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "What was the nickname of the Pistons teams that won back-to-back titles in 1989 and 1990?", "o": ["Bad Boys", "Motor City Madmen", "Goin' to Work", "Detroit Wall"], "a": "Bad Boys"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Michigan's famed 1991 recruiting class of five freshman starters was known as what?", "o": ["Fab Five", "Fresh Five", "Wolverine Wave", "High Five"], "a": "Fab Five"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which Lions running back walked away from the game in 1998, roughly 1,500 yards from the rushing record?", "a": "Barry Sanders", "al": ["Sanders"]},
+      {"t": 3, "f": "ff", "sport": "NHL", "q": "Name the Red Wings legend known as 'Mr. Hockey.'", "a": "Gordie Howe", "al": ["Howe"]}
+    ],
+    "MN": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "What was the nickname of the Vikings' dominant 1970s defensive line?", "o": ["Purple People Eaters", "Steel Curtain", "Doomsday Defense", "Fearsome Foursome"], "a": "Purple People Eaters"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Whose Game 6 walk-off homer forced Game 7 of the 1991 World Series for the Twins?", "o": ["Kirby Puckett", "Kent Hrbek", "Chili Davis", "Dan Gladden"], "a": "Kirby Puckett"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which St. Paul native coached the 1980 'Miracle on Ice' U.S. hockey team?", "o": ["Herb Brooks", "Lou Nanne", "Bob Johnson", "John Mariucci"], "a": "Herb Brooks"},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Name the Timberwolves forward who won the 2004 NBA MVP.", "a": "Kevin Garnett", "al": ["Garnett", "KG"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which Marshall, Minnesota-area franchise moment stings most: the Vikings have lost how many Super Bowls without a win?", "a": "4", "al": ["four"]}
+    ],
+    "MS": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "What is Ole Miss's famous cheer?", "o": ["Hotty Toddy", "War Eagle", "Sic 'Em", "Geaux Rebs"], "a": "Hotty Toddy"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Jerry Rice played his college football at which Mississippi school?", "o": ["Mississippi Valley State", "Ole Miss", "Southern Miss", "Jackson State"], "a": "Mississippi Valley State"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which iron-man quarterback went from Southern Miss to a record 297 straight NFL starts?", "o": ["Brett Favre", "Steve McNair", "Archie Manning", "Ray Guy"], "a": "Brett Favre"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Walter Payton starred at which Mississippi HBCU?", "a": "Jackson State", "al": ["Jackson State University"]},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Name the Ole Miss quarterback patriarch of football's most famous QB family.", "a": "Archie Manning", "al": ["Archie", "Manning"]}
+    ],
+    "MO": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "In which Missouri city do the Chiefs play?", "o": ["Kansas City", "St. Louis", "Springfield", "Columbia"], "a": "Kansas City"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "The Royals won the 2015 World Series over which team?", "o": ["New York Mets", "San Francisco Giants", "Philadelphia Phillies", "Los Angeles Dodgers"], "a": "New York Mets"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which National League franchise has the most World Series titles, with 11?", "o": ["St. Louis Cardinals", "Los Angeles Dodgers", "San Francisco Giants", "Atlanta Braves"], "a": "St. Louis Cardinals"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Cardinals great known as 'Stan the Man.'", "a": "Stan Musial", "al": ["Musial"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Patrick Mahomes won his first Super Bowl against which team?", "a": "San Francisco 49ers", "al": ["49ers", "Niners", "San Francisco"]}
+    ],
+    "MT": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Montana vs. Montana State is known as what?", "o": ["Brawl of the Wild", "Big Sky Bowl", "Treasure Trophy", "Grizzly-Cat Classic"], "a": "Brawl of the Wild"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which Orioles pitcher from Billings hit a grand slam in the 1970 World Series?", "o": ["Dave McNally", "Jim Palmer", "Mike Cuellar", "Pat Dobson"], "a": "Dave McNally"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which 11-time champion NBA coach was born in Deer Lodge, Montana?", "o": ["Phil Jackson", "Pat Riley", "Gregg Popovich", "Red Auerbach"], "a": "Phil Jackson"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the Great Falls quarterback taken No. 2 overall in 1998, one pick after Peyton Manning.", "a": "Ryan Leaf", "al": ["Leaf"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Which Butte, Montana daredevil famously jumped the Caesars Palace fountain on a motorcycle?", "a": "Evel Knievel", "al": ["Knievel"]}
+    ],
+    "NE": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Nebraska's Memorial Stadium has sold out every home game since what decade?", "o": ["1960s", "1980s", "1990s", "2000s"], "a": "1960s"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which coach led Nebraska to back-to-back national titles in 1994 and 1995?", "o": ["Tom Osborne", "Bob Devaney", "Frank Solich", "Bill Callahan"], "a": "Tom Osborne"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which Omaha-born Cardinals ace posted a 1.12 ERA in 1968?", "o": ["Bob Gibson", "Curt Flood", "Steve Carlton", "Lou Brock"], "a": "Bob Gibson"},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Name the Nebraska 'Johnny the Jet' who won the 1972 Heisman.", "a": "Johnny Rodgers", "al": ["Rodgers"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "The College World Series has been played in which Nebraska city since 1950?", "a": "Omaha", "al": []}
+    ],
+    "NV": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "Which NFL team relocated to Las Vegas in 2020?", "o": ["Raiders", "Chargers", "Rams", "Cardinals"], "a": "Raiders"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "UNLV's Runnin' Rebels crushed Duke 103-73 in the title game in which year?", "o": ["1990", "1987", "1993", "1984"], "a": "1990"},
+      {"t": 2, "f": "mc", "sport": "NHL", "q": "The Vegas Golden Knights won their first Stanley Cup in which year?", "o": ["2023", "2018", "2021", "2024"], "a": "2023"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Las Vegas tennis legend who completed a career Golden Slam.", "a": "Andre Agassi", "al": ["Agassi"]},
+      {"t": 3, "f": "ff", "sport": "NHL", "q": "In their inaugural 2017-18 season, the Golden Knights lost the Cup Final to which team?", "a": "Washington Capitals", "al": ["Capitals", "Washington"]}
+    ],
+    "NH": [
+      {"t": 1, "f": "mc", "sport": "OTH", "q": "New Hampshire Motor Speedway, a longtime NASCAR stop, is in which town?", "o": ["Loudon", "Concord", "Nashua", "Laconia"], "a": "Loudon"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which catcher, raised in New Hampshire, waved his 1975 World Series homer fair?", "o": ["Carlton Fisk", "Jason Varitek", "Rich Gedman", "Gary Carter"], "a": "Carlton Fisk"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Concord, NH sharpshooter won two rings with the Spurs?", "o": ["Matt Bonner", "Brian Scalabrine", "Steve Novak", "Kyle Korver"], "a": "Matt Bonner"},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Which Ivy League school plays its home games in Hanover, New Hampshire?", "a": "Dartmouth", "al": ["Dartmouth College"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "The UNH athletic teams go by what nickname?", "a": "Wildcats", "al": []}
+    ],
+    "NJ": [
+      {"t": 1, "f": "mc", "sport": "NHL", "q": "How many Stanley Cups have the New Jersey Devils won?", "o": ["3", "1", "2", "5"], "a": "3"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which three-time AL MVP comes from Millville, New Jersey?", "o": ["Mike Trout", "Derek Jeter", "Todd Frazier", "Rick Porcello"], "a": "Mike Trout"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Hall of Fame center was born in Newark?", "o": ["Shaquille O'Neal", "Patrick Ewing", "Alonzo Mourning", "Dikembe Mutombo"], "a": "Shaquille O'Neal"},
+      {"t": 3, "f": "ff", "sport": "NHL", "q": "Name the Devils goalie who holds the NHL record for career wins.", "a": "Martin Brodeur", "al": ["Brodeur"]},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Rutgers played the first-ever college football game in 1869 against which school?", "a": "Princeton", "al": ["Princeton University"]}
+    ],
+    "NM": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "What is the nickname of New Mexico's famously loud basketball arena?", "o": ["The Pit", "The Cave", "The Furnace", "The Crater"], "a": "The Pit"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Which famous championship upset was played at The Pit in 1983?", "o": ["NC State over Houston", "Villanova over Georgetown", "Texas Western over Kentucky", "UMBC over Virginia"], "a": "NC State over Houston"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which Bears linebacker great played his college ball at New Mexico?", "o": ["Brian Urlacher", "Mike Singletary", "Lance Briggs", "Otis Wilson"], "a": "Brian Urlacher"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Albuquerque fighter who knocked out Ronda Rousey in 2015.", "a": "Holly Holm", "al": ["Holm"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Which Albuquerque racing patriarch won the Indy 500 four times?", "a": "Al Unser", "al": ["Unser", "Al Unser Sr"]}
+    ],
+    "NY": [
+      {"t": 1, "f": "mc", "sport": "MLB", "q": "How many World Series titles do the Yankees hold?", "o": ["27", "22", "25", "30"], "a": "27"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which injured Knicks captain walked out of the tunnel to start Game 7 of the 1970 Finals?", "o": ["Willis Reed", "Walt Frazier", "Dave DeBusschere", "Earl Monroe"], "a": "Willis Reed"},
+      {"t": 2, "f": "mc", "sport": "NHL", "q": "The Rangers' 1994 Stanley Cup ended a drought of how many years?", "o": ["54", "40", "61", "47"], "a": "54"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Which Yankee called himself 'the luckiest man on the face of the earth' in his 1939 farewell?", "a": "Lou Gehrig", "al": ["Gehrig"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "What nickname did the 1969 championship Mets earn?", "a": "Miracle Mets", "al": ["The Miracle Mets", "Amazin Mets", "Amazins"]}
+    ],
+    "NC": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "Michael Jordan hit a title-winning shot as a freshman for which school?", "o": ["North Carolina", "Duke", "NC State", "Wake Forest"], "a": "North Carolina"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Which coach won five national titles at Duke?", "o": ["Mike Krzyzewski", "Dean Smith", "Roy Williams", "Jim Valvano"], "a": "Mike Krzyzewski"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which North Carolina NASCAR king won a record 200 Cup races?", "o": ["Richard Petty", "Dale Earnhardt", "Junior Johnson", "David Pearson"], "a": "Richard Petty"},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Name the coach who ran the court looking for someone to hug after NC State's 1983 title.", "a": "Jim Valvano", "al": ["Valvano", "Jimmy V"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which Panthers quarterback won the 2015 NFL MVP?", "a": "Cam Newton", "al": ["Newton"]}
+    ],
+    "ND": [
+      {"t": 1, "f": "mc", "sport": "OTH", "q": "North Dakota's famed college hockey team is now nicknamed what?", "o": ["Fighting Hawks", "Fighting Sioux", "Bison", "Ice Cats"], "a": "Fighting Hawks"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which Fargo school built an FCS dynasty with nine titles in the 2010s?", "o": ["North Dakota State", "North Dakota", "Minot State", "Dickinson State"], "a": "North Dakota State"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which NDSU quarterback went No. 2 overall in the 2016 draft?", "o": ["Carson Wentz", "Trey Lance", "Easton Stick", "Brock Jensen"], "a": "Carson Wentz"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Fargo-raised slugger who hit 61 home runs in 1961.", "a": "Roger Maris", "al": ["Maris"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Which Jamestown, ND native won a World Series with the 2002 Angels after punting for Nebraska?", "a": "Darin Erstad", "al": ["Erstad"]}
+    ],
+    "OH": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "The Browns-Bengals rivalry is known as the Battle of what?", "o": ["Ohio", "The Buckeye", "Lake Erie", "The Rust Belt"], "a": "Ohio"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "The 2016 Cavaliers came back from what Finals deficit against Golden State?", "o": ["Down 3-1", "Down 3-0", "Down 2-0", "Down 3-2"], "a": "Down 3-1"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which third-string quarterback led Ohio State through the first College Football Playoff title run?", "o": ["Cardale Jones", "J.T. Barrett", "Braxton Miller", "Troy Smith"], "a": "Cardale Jones"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Columbus golfer who holds the record of 18 major championships.", "a": "Jack Nicklaus", "al": ["Nicklaus"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "What was the nickname of the Reds' mid-1970s championship teams?", "a": "Big Red Machine", "al": ["The Big Red Machine"]}
+    ],
+    "OK": [
+      {"t": 1, "f": "mc", "sport": "NBA", "q": "Which team did the Thunder beat for the 2025 NBA championship?", "o": ["Indiana Pacers", "Boston Celtics", "Denver Nuggets", "New York Knicks"], "a": "Indiana Pacers"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Oklahoma owns college football's longest winning streak. How many games?", "o": ["47", "34", "40", "52"], "a": "47"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which former walk-on won the 2017 Heisman at Oklahoma?", "o": ["Baker Mayfield", "Kyler Murray", "Sam Bradford", "Jason White"], "a": "Baker Mayfield"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Yankees switch-hitter from Commerce, Oklahoma known as the Commerce Comet.", "a": "Mickey Mantle", "al": ["Mantle"]},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Which Thunder guard won both MVP and Finals MVP in 2025?", "a": "Shai Gilgeous-Alexander", "al": ["SGA", "Shai", "Gilgeous-Alexander", "Gilgeous Alexander"]}
+    ],
+    "OR": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Which shoe company grew out of Oregon track, co-founded by runner Phil Knight and coach Bill Bowerman?", "o": ["Nike", "Adidas", "Brooks", "New Balance"], "a": "Nike"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which center led the Trail Blazers to their 1977 championship?", "o": ["Bill Walton", "Clyde Drexler", "Arvydas Sabonis", "Rasheed Wallace"], "a": "Bill Walton"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Who won Oregon's first Heisman Trophy in 2014?", "o": ["Marcus Mariota", "Joey Harrington", "Justin Herbert", "LaMichael James"], "a": "Marcus Mariota"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Coos Bay distance-running icon who died at 24 holding every American record from 2,000 to 10,000 meters.", "a": "Steve Prefontaine", "al": ["Prefontaine", "Pre"]},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "The Blazers famously drafted Sam Bowie in 1984 one pick before which player?", "a": "Michael Jordan", "al": ["Jordan", "MJ"]}
+    ],
+    "PA": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "How many Super Bowls have the Steelers won?", "o": ["6", "4", "5", "7"], "a": "6"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Franco Harris's 1972 shoestring catch against the Raiders is known as what?", "o": ["Immaculate Reception", "Miracle at the Meadowlands", "The Catch", "Steel Grab"], "a": "Immaculate Reception"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Whose buzzer-beater won Villanova the 2016 national championship?", "o": ["Kris Jenkins", "Ryan Arcidiacono", "Josh Hart", "Jalen Brunson"], "a": "Kris Jenkins"},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Wilt Chamberlain scored 100 points in 1962 in which Pennsylvania town?", "a": "Hershey", "al": ["Hershey PA", "Hershey Pennsylvania"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the golf legend from Latrobe whose 'Army' followed him to seven majors.", "a": "Arnold Palmer", "al": ["Palmer"]}
+    ],
+    "RI": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "The Providence Friars are a founding member of which basketball conference?", "o": ["Big East", "ACC", "Atlantic 10", "Patriot League"], "a": "Big East"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Which Providence point guard won the 1974 NBA Rookie of the Year?", "o": ["Ernie DiGregorio", "Lenny Wilkens", "Marvin Barnes", "God Shammgod"], "a": "Ernie DiGregorio"},
+      {"t": 2, "f": "mc", "sport": "MLB", "q": "Which Woonsocket native managed the Minnesota Twins starting in 2019?", "o": ["Rocco Baldelli", "Dan Hurley", "Davey Lopes", "Paul Konerko"], "a": "Rocco Baldelli"},
+      {"t": 3, "f": "ff", "sport": "CBB", "q": "Name the Hall of Fame guard and coach from Providence College who won an NBA title coaching Seattle in 1979.", "a": "Lenny Wilkens", "al": ["Wilkens"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Which Woonsocket-born early-1900s star hit .426 in 1901, the AL's highest average ever?", "a": "Napoleon Lajoie", "al": ["Lajoie", "Nap Lajoie"]}
+    ],
+    "SC": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "What do Clemson fans call their home stadium?", "o": ["Death Valley", "The Swamp", "The Plains", "Between the Hedges"], "a": "Death Valley"},
+      {"t": 2, "f": "mc", "sport": "CFB", "q": "Which freshman quarterback led Clemson to the 2018 national title over Alabama?", "o": ["Trevor Lawrence", "Deshaun Watson", "Tajh Boyd", "Kelly Bryant"], "a": "Trevor Lawrence"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Who has coached South Carolina's women to multiple national championships?", "o": ["Dawn Staley", "Kim Mulkey", "Geno Auriemma", "Vivian Stringer"], "a": "Dawn Staley"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the heavyweight champion from Beaufort, SC who handed Muhammad Ali his first pro loss.", "a": "Joe Frazier", "al": ["Frazier", "Smokin Joe"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Which South Carolina Gamecock became a multiple-time WNBA MVP with the Las Vegas Aces?", "a": "A'ja Wilson", "al": ["Aja Wilson", "Wilson"]}
+    ],
+    "SD": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "South Dakota State's teams are known as what?", "o": ["Jackrabbits", "Coyotes", "Bison", "Prairie Dogs"], "a": "Jackrabbits"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which clutch kicker, raised in Rapid City, won four Super Bowls?", "o": ["Adam Vinatieri", "Gary Anderson", "Jason Elam", "Morten Andersen"], "a": "Adam Vinatieri"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Mitchell, SD native won the 2001 NBA Rookie of the Year with Orlando?", "o": ["Mike Miller", "Kirk Hinrich", "Nate Wolters", "Chad Greenway"], "a": "Mike Miller"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Oglala Lakota runner from Pine Ridge who won stunning 10,000m gold in 1964.", "a": "Billy Mills", "al": ["Mills"]},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Which Rapid City point guard became the NBA's first full-time female assistant coach?", "a": "Becky Hammon", "al": ["Hammon"]}
+    ],
+    "TN": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "The Titans franchise moved to Tennessee from which city?", "o": ["Houston", "Baltimore", "St. Louis", "Memphis"], "a": "Houston"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "The Titans' lateral kickoff-return touchdown in the January 2000 playoffs is called what?", "o": ["Music City Miracle", "Nashville Nightmare", "Homefield Heist", "Volunteer Victory"], "a": "Music City Miracle"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Which Tennessee coach won eight national titles and 1,098 games?", "o": ["Pat Summitt", "Bruce Pearl", "Rick Barnes", "Holly Warlick"], "a": "Pat Summitt"},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Which future Colts legend quarterbacked the Tennessee Volunteers from 1994 to 1997?", "a": "Peyton Manning", "al": ["Peyton", "Manning"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "The Titans lost Super Bowl XXXIV when Kevin Dyson was tackled how far from the goal line?", "a": "One yard", "al": ["1 yard", "a yard", "one"]}
+    ],
+    "TX": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "Which nickname belongs to the Dallas Cowboys?", "o": ["America's Team", "The Lone Stars", "Texas's Team", "The Herd"], "a": "America's Team"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "The 1990s Cowboys 'Triplets' were Troy Aikman, Emmitt Smith, and who?", "o": ["Michael Irvin", "Deion Sanders", "Jay Novacek", "Alvin Harper"], "a": "Michael Irvin"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "How many championships did Tim Duncan win with the Spurs?", "o": ["5", "3", "4", "6"], "a": "5"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Texas fireballer who threw a record seven no-hitters.", "a": "Nolan Ryan", "al": ["Ryan"]},
+      {"t": 3, "f": "ff", "sport": "CFB", "q": "Which Tyler, Texas running back won the 1977 Heisman for the Longhorns?", "a": "Earl Campbell", "al": ["Campbell", "Tyler Rose"]}
+    ],
+    "UT": [
+      {"t": 1, "f": "mc", "sport": "NBA", "q": "The Utah Jazz kept their musical name after moving from which city?", "o": ["New Orleans", "Memphis", "Kansas City", "St. Louis"], "a": "New Orleans"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Jazz point guard holds the NBA's all-time assists record?", "o": ["John Stockton", "Deron Williams", "Mark Jackson", "Jason Kidd"], "a": "John Stockton"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Salt Lake City hosted the Winter Olympics in which year?", "o": ["2002", "1998", "2006", "1994"], "a": "2002"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Name the BYU quarterback who threw six touchdowns in Super Bowl XXIX.", "a": "Steve Young", "al": ["Young"]},
+      {"t": 3, "f": "ff", "sport": "NBA", "q": "Michael Jordan's 1998 'Last Shot' in Salt Lake City came over which Jazz defender?", "a": "Bryon Russell", "al": ["Russell", "Byron Russell"]}
+    ],
+    "VT": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "Vermont's athletic teams are known as what?", "o": ["Catamounts", "Mountaineers", "Green Knights", "Lake Monsters"], "a": "Catamounts"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Whose deep three 'from the parking lot' sealed 13-seed Vermont's 2005 upset of Syracuse?", "o": ["T.J. Sorrentine", "Taylor Coppenrath", "Marqus Blakely", "Eric Coleman"], "a": "T.J. Sorrentine"},
+      {"t": 2, "f": "mc", "sport": "OTH", "q": "Which Belmont, Vermont snowboarder won halfpipe gold at the 2006 Torino Games?", "o": ["Hannah Teter", "Kelly Clark", "Gretchen Bleiler", "Chloe Kim"], "a": "Hannah Teter"},
+      {"t": 3, "f": "ff", "sport": "NHL", "q": "Name the St. Albans winger who became the first Vermont-born NHL player with three straight 50-goal seasons for the Flyers.", "a": "John LeClair", "al": ["LeClair"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Which Rutland-raised skier won two alpine golds at the 1952 Olympics?", "a": "Andrea Mead Lawrence", "al": ["Mead Lawrence", "Andrea Mead"]}
+    ],
+    "VA": [
+      {"t": 1, "f": "mc", "sport": "CBB", "q": "The Virginia Cavaliers play in which conference?", "o": ["ACC", "SEC", "Big East", "Big Ten"], "a": "ACC"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "A year after losing to a 16-seed, Virginia did what in 2019?", "o": ["Won the national title", "Missed the tournament", "Fired its coach", "Lost to a 15-seed"], "a": "Won the national title"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which Hampton, Virginia guard won the 2001 NBA MVP?", "o": ["Allen Iverson", "Alonzo Mourning", "Grant Hill", "Jerry Stackhouse"], "a": "Allen Iverson"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Richmond tennis pioneer who won Wimbledon in 1975.", "a": "Arthur Ashe", "al": ["Ashe"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which Williamsburg-born Giants linebacker redefined the position and won two Super Bowls?", "a": "Lawrence Taylor", "al": ["Taylor", "LT"]}
+    ],
+    "WA": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "What do Seahawks fans collectively call themselves?", "o": ["The 12s", "The Flock", "The Wave", "The Green Wall"], "a": "The 12s"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "What was the final score of the Seahawks' Super Bowl XLVIII rout of Denver?", "o": ["43-8", "35-10", "28-3", "48-7"], "a": "43-8"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Seattle's Super Bowl XLIX loss ended on a goal-line interception by which Patriot?", "o": ["Malcolm Butler", "Darrelle Revis", "Devin McCourty", "Brandon Browner"], "a": "Malcolm Butler"},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name 'The Kid' — the Mariners center fielder with 630 career home runs.", "a": "Ken Griffey Jr", "al": ["Griffey", "Ken Griffey", "Ken Griffey Junior"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Which Mariners ace threw a perfect game in 2012?", "a": "Felix Hernandez", "al": ["Hernandez", "King Felix"]}
+    ],
+    "WV": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Which song do West Virginia fans sing after every home win?", "o": ["Take Me Home, Country Roads", "Sweet Caroline", "Rocky Top", "Mr. Brightside"], "a": "Take Me Home, Country Roads"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "Which West Virginia native's silhouette is widely said to be the NBA logo?", "o": ["Jerry West", "Hal Greer", "Rod Hundley", "George King"], "a": "Jerry West"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which Rand, WV receiver starred at Marshall before his Hall of Fame NFL career?", "o": ["Randy Moss", "Chad Pennington", "Troy Brown", "Byron Leftwich"], "a": "Randy Moss"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Fairmont gymnast who won the 1984 Olympic all-around.", "a": "Mary Lou Retton", "al": ["Retton"]},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "Which WVU linebacker anchored the Giants' defense in the 1950s and landed in the Hall of Fame?", "a": "Sam Huff", "al": ["Huff"]}
+    ],
+    "WI": [
+      {"t": 1, "f": "mc", "sport": "NFL", "q": "What makes the Packers unique among major U.S. pro teams?", "o": ["Publicly owned by fans", "No home stadium", "Oldest logo", "Two home cities"], "a": "Publicly owned by fans"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "The 1967 NFL Championship at Lambeau, played at -13°F, is known as what?", "o": ["Ice Bowl", "Freezer Bowl", "Snow Bowl", "Frost Bowl"], "a": "Ice Bowl"},
+      {"t": 2, "f": "mc", "sport": "NBA", "q": "How many points did Giannis score in the Bucks' 2021 title-clinching Game 6?", "o": ["50", "42", "45", "55"], "a": "50"},
+      {"t": 3, "f": "ff", "sport": "NFL", "q": "The Super Bowl trophy is named for which Packers coach?", "a": "Vince Lombardi", "al": ["Lombardi"]},
+      {"t": 3, "f": "ff", "sport": "MLB", "q": "Name the Brewers shortstop-turned-center-fielder who won MVPs at both positions.", "a": "Robin Yount", "al": ["Yount"]}
+    ],
+    "WY": [
+      {"t": 1, "f": "mc", "sport": "CFB", "q": "Wyoming's War Memorial Stadium is the highest in FBS at what elevation?", "o": ["7,220 feet", "5,280 feet", "6,035 feet", "8,100 feet"], "a": "7,220 feet"},
+      {"t": 2, "f": "mc", "sport": "NFL", "q": "Which Bills star quarterback played his college ball at Wyoming?", "o": ["Josh Allen", "Jim Kelly", "Carson Wentz", "Jay Cutler"], "a": "Josh Allen"},
+      {"t": 2, "f": "mc", "sport": "CBB", "q": "Wyoming won the NCAA basketball title in 1943 behind which jump-shot pioneer?", "o": ["Kenny Sailors", "Bob Kurland", "Hank Luisetti", "George Mikan"], "a": "Kenny Sailors"},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Name the Afton, Wyoming wrestler who beat the unbeatable Alexander Karelin for 2000 Olympic gold.", "a": "Rulon Gardner", "al": ["Gardner"]},
+      {"t": 3, "f": "ff", "sport": "OTH", "q": "Cheyenne hosts 'the Daddy of 'em All,' the world's largest outdoor what?", "a": "Rodeo", "al": ["Frontier Days", "Cheyenne Frontier Days"]}
+    ]
+  }
+}

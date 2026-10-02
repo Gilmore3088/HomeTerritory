@@ -92,5 +92,11 @@ begin
   if v_res2->'question'->>'attempt_id' is null then raise exception 'FAIL recycle did not serve a question'; end if;
   raise notice 'PASS exhausted state recycles questions';
 
+  -- Fortify spends an action (it used to be free, allowing endless play).
+  if (select actions_remaining from public.player_actions where season_id = v_season and user_id = u1) <> 2 then
+    raise exception 'FAIL fortify did not spend an action';
+  end if;
+  raise notice 'PASS fortify costs an action';
+
   raise notice 'ALL ENGINE TESTS PASSED';
 end $$;
